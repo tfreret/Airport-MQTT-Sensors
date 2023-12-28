@@ -4,7 +4,10 @@ build_dir=./exe
 if [ ! -d "$build_dir" ]; then
     mkdir "$build_dir"
 fi
-rm -r "$build_dir"/*
+
+if [ "$(ls -A "$build_dir")" ]; then
+    rm -r "$build_dir"/*
+fi
 
 sensor_files=("pressureSensor" "tempSensor" "windSensor")
 
@@ -14,6 +17,10 @@ for file in "${sensor_files[@]}"; do
 done
 
 echo "Build process completed."
+
+echo "lunching mosquitto serveur"
+mosquitto &
+
 
 for file in "${sensor_files[@]}"; do
     echo "Running $file"
@@ -30,6 +37,8 @@ cleanup() {
     for file in "${sensor_files[@]}"; do
         pkill -TERM -f "$build_dir/$file"
     done
+
+    pkill mosquitto
     
     wait
     

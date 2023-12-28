@@ -1,7 +1,7 @@
 package main
 
 import (
-    "sensors/internal/common/sensor"
+    "sensors/internal/sensor"
     "time"
 )
 
@@ -14,8 +14,7 @@ func (pSensor PressureSensor) GetActualizeMeasure() sensor.Measurement {
     return sensor.Measurement{TypeMesure: "Pres", Value: 0.66, Timestamp: time.Now().Format(time.RFC3339)}
 }
 
-func NewPressureSensor(idSensor int, idAirport string) *PressureSensor {
-    pSensor := PressureSensor{ sensor.Sensor{Id: idSensor, Airport: idAirport} }
-    pSensor.Sensor.SensorInterface = pSensor
-    return &pSensor
+func NewPressureSensor(idSensor int, idAirport string) (pSensor PressureSensor) {
+    pSensor.Sensor = sensor.NewSensor(pSensor, idSensor, idAirport)
+    return pSensor
 }
