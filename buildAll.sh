@@ -10,7 +10,7 @@ if [ "$(ls -A "$build_dir")" ]; then
 fi
 
 files=("sensors/pressureSensor" "sensors/tempSensor" "sensors/windSensor")
-args=("-id 44 -airport A234C -frequency 10" "-id 55 -airport A234C -frequency 10" "-id 66 -airport A234C -frequency 10")
+args=("-id 44 -airport KJFK -frequency 10" "-id 55 -airport KJFK -frequency 10" "-id 66 -airport KJFK -frequency 10")
 
 for file in "${files[@]}"; do
     echo "Building $file"
