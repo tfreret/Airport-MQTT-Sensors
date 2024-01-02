@@ -1,6 +1,8 @@
 package main
 
 import (
+	"airport/internal/apiClient"
+	"airport/internal/sensors/config"
 	"airport/internal/sensors/sensor"
 	"time"
 )
@@ -10,8 +12,8 @@ type TempSensor struct {
 }
 
 func (tSensor *TempSensor) GetActualizeMeasure() sensor.Measurement {
-	// TODO fetch from api or get from json
-	return sensor.Measurement{TypeMesure: "Temp", Value: 0.66, Timestamp: time.Now().Format(time.RFC3339)}
+	apiResponse, _ := apiClient.GetApiResponse(config.CHECKWX_URL+tSensor.Airport+"/decoded", config.CHECKWX_API_KEY)
+	return sensor.Measurement{TypeMesure: "Temp", Value: apiResponse.Data[0].Temperature.Celsius, Timestamp: time.Now().Format(time.RFC3339)}
 }
 
 func NewTempSensor(idSensor int, idAirport string) *TempSensor {
