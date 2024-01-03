@@ -37,7 +37,12 @@ func (sensor Sensor) StartSendingData(interval int) {
 	for {
 		select {
 		case <-ticker.C:
-			sensor.Send(sensor.GetActualizeMeasure())
+			measurement, err := sensor.GetActualizeMeasure()
+			if err != nil {
+				fmt.Printf("Erreur lors de l'obtention de la mesure : %v", err)
+				return
+			}
+			sensor.Send(measurement)
 		}
 	}
 }
