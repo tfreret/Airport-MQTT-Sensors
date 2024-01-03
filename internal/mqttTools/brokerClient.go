@@ -2,8 +2,7 @@ package mqttTools
 
 import (
 	"airport/internal/config"
-	"fmt"
-	"os"
+	"log"
 	"github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -11,15 +10,19 @@ type BrokerClient struct {
 	client mqtt.Client
 }
 
-func NewBrokerClient() BrokerClient {
+func NewBrokerClient(idClient ...string) BrokerClient {
 	broker := config.BROKER_URL
 
 	opts := mqtt.NewClientOptions().AddBroker(broker)
+
+	if len(idClient) == 1 {
+		opts.SetClientID(idClient[0])
+	}
+
 	client := mqtt.NewClient(opts)
 
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		fmt.Println("Erreur de connexion au broker MQTT:", token.Error())
-		os.Exit(1)
+		log.Fatal(token.Error())
 	}
 	return BrokerClient{client: client}
 }
@@ -27,4 +30,14 @@ func NewBrokerClient() BrokerClient {
 func (brokerClient BrokerClient) SendMessage(topic, message string) {
 	token := brokerClient.client.Publish(topic, config.BROKER_QoS, false, message)
 	token.Wait()
+}
+
+
+func (brokerClient BrokerClient) Subscribe(topic string, callBack func(topic string, message []byte)) {
+	if token := brokerClient.client.Subscribe(topic, 0, 
+		func(client mqtt.Client, msg mqtt.Message) {
+			callBack(msg.Topic(), msg.Payload())
+		}); token.Wait() && token.Error() != nil {
+		log.Fatal(token.Error())
+	}
 }
