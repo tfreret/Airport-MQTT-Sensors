@@ -2,8 +2,8 @@ package main
 
 import (
 	"airport/internal/apiClient"
-	"airport/internal/sensors/config"
-	"airport/internal/sensors/sensor"
+	"airport/internal/config"
+	"airport/internal/sensor"
 	"time"
 )
 
