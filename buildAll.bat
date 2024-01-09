@@ -17,19 +17,14 @@ for %%f in (%files%) do (
 
 echo Build process completed.
 
-for %%f in (%files%) do (
-    echo Running %%f
-    start "" "%build_dir%\%%f.exe" -id 44 -airport A234C -frequency 10
-)
+ start "" "./%build_dir%/sensors/pressureSensor.exe" -id 44 -airport KJFK -frequency 10
+ start "" "./%build_dir%/sensors/tempSensor.exe" -id 55 -airport KJFK -frequency 10 &
+ start "" "./%build_dir%/sensors/windSensor.exe" -id 66 -airport KJFK -frequency 10 &
 
-:: ."/$build_dir/tempSensor" -id 44 -airport A234C -frequency 10 &
-:: ."/$build_dir/tempSensor" -id 55 -airport A333C -frequency 10 &
-:: ."/$build_dir/tempSensor" -id 66 -airport A555C -frequency 10 &
-
-:cleanup
-echo Sensors stopping...
-for %%f in (%files%) do (
-    taskkill /IM "%%f.exe" /F
-)
-echo Stopped
-exit /B 0
+::cleanup
+::echo Sensors stopping...
+::for %%f in (%files%) do (
+::    taskkill /IM "%%f.exe" /F
+::)
+::echo Stopped
+::exit /B 0
