@@ -1,23 +1,21 @@
 package mqttTools
 
 import (
-	"airport/internal/config"
-	"log"
+	"fmt"
 	"github.com/eclipse/paho.mqtt.golang"
+	"log"
 )
 
 type BrokerClient struct {
 	client mqtt.Client
 }
 
-func NewBrokerClient(idClient ...string) BrokerClient {
-	broker := config.BROKER_URL
+func NewBrokerClient(id string, url string, port int, login string, password string) BrokerClient {
+	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprint(url, ":", port))
 
-	opts := mqtt.NewClientOptions().AddBroker(broker)
-
-	if len(idClient) == 1 {
-		opts.SetClientID(idClient[0])
-	}
+	opts.SetClientID(id)
+	opts.SetUsername(login)
+	opts.SetPassword(password)
 
 	client := mqtt.NewClient(opts)
 
@@ -27,14 +25,13 @@ func NewBrokerClient(idClient ...string) BrokerClient {
 	return BrokerClient{client: client}
 }
 
-func (brokerClient BrokerClient) SendMessage(topic, message string) {
-	token := brokerClient.client.Publish(topic, config.BROKER_QoS, false, message)
+func (brokerClient BrokerClient) SendMessage(topic, message string, qos byte) {
+	token := brokerClient.client.Publish(topic, qos, false, message)
 	token.Wait()
 }
 
-
 func (brokerClient BrokerClient) Subscribe(topic string, callBack func(topic string, message []byte)) {
-	if token := brokerClient.client.Subscribe(topic, 0, 
+	if token := brokerClient.client.Subscribe(topic, 0,
 		func(client mqtt.Client, msg mqtt.Message) {
 			callBack(msg.Topic(), msg.Payload())
 		}); token.Wait() && token.Error() != nil {

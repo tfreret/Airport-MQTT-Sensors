@@ -14,7 +14,7 @@ type TempSensor struct {
 }
 
 func (tSensor *TempSensor) GetActualizeMeasure() (sensor.Measurement, error) {
-	apiResponse, err := apiClient.GetApiResponse(config.CHECKWX_URL+tSensor.Airport+"/decoded", config.CHECKWX_API_KEY)
+	apiResponse, err := apiClient.GetApiResponse(config.CHECKWX_URL+tSensor.SensorAirport+"/decoded", config.CHECKWX_API_KEY)
 	if err != nil {
 		log.Printf("Erreur lors de l'obtention de la réponse de l'API : %v", err)
 
@@ -23,8 +23,8 @@ func (tSensor *TempSensor) GetActualizeMeasure() (sensor.Measurement, error) {
 	return sensor.Measurement{TypeMesure: "Temp", Value: apiResponse.Data[0].Temperature.Celsius, Timestamp: time.Now().Format(time.RFC3339)}, nil
 }
 
-func NewTempSensor(idSensor int, idAirport string) *TempSensor {
+func NewTempSensor(config sensor.ConfigSensor) *TempSensor {
 	tSensor := &TempSensor{}
-	tSensor.Sensor = sensor.NewSensor(tSensor, idSensor, idAirport)
+	tSensor.Sensor = sensor.NewSensor(tSensor, config)
 	return tSensor
 }
