@@ -20,7 +20,7 @@ func (tSensor *TempSensor) GetActualizeMeasure() (sensor.Measurement, error) {
 
 		return sensor.Measurement{}, fmt.Errorf("échec lors de l'obtention de la mesure : %w", err)
 	}
-	return sensor.Measurement{TypeMesure: "Temp", Value: apiResponse.Data[0].Temperature.Celsius, Timestamp: time.Now().Format(time.RFC3339)}, nil
+	return sensor.Measurement{TypeMesure: "Temp", Value: apiResponse.Data[0].Temperature.Celsius, Timestamp: time.Now().UTC().Format(time.RFC3339)}, nil
 }
 
 func NewTempSensor(idSensor int, idAirport string) *TempSensor {

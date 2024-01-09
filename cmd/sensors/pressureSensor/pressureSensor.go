@@ -20,7 +20,7 @@ func (pSensor *PressureSensor) GetActualizeMeasure() (sensor.Measurement, error)
 
 		return sensor.Measurement{}, fmt.Errorf("échec lors de l'obtention de la mesure : %w", err)
 	}
-	return sensor.Measurement{TypeMesure: "Pres", Value: apiResponse.Data[0].Barometer.Hpa, Timestamp: time.Now().Format(time.RFC3339)}, nil
+	return sensor.Measurement{TypeMesure: "Pres", Value: apiResponse.Data[0].Barometer.Hpa, Timestamp: time.Now().UTC().Format(time.RFC3339)}, nil
 }
 
 func NewPressureSensor(idSensor int, idAirport string) *PressureSensor {
