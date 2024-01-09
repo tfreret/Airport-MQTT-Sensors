@@ -9,4 +9,4 @@ api:
   key: 00565729182a4505881b8e47a5
 sensor:
   airport: KJFK
-  frequency: 30
+  frequency: 5

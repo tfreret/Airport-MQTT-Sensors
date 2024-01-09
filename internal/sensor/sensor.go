@@ -78,7 +78,7 @@ func (sensor Sensor) StartSendingData() {
 	}
 }
 
-func ReadConfig(filename string) ConfigSensor {
+func ReadSensorConfig(filename string) ConfigSensor {
 	viper.SetConfigName(filename)
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")

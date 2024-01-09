@@ -11,7 +11,7 @@ func main() {
 		configFile = flag.String("config", "sensor-temperature-config.yaml", "Config file of the sensor")
 	)
 	flag.Parse()
-	config := sensor.ReadConfig(*configFile)
+	config := sensor.ReadSensorConfig(*configFile)
 
 	fmt.Println("Using config :", config)
 	NewTempSensor(config).StartSendingData()
