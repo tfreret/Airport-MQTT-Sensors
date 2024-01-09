@@ -3,5 +3,6 @@ mqtt:
   port: 1883
   qos: 2
   id: sensor-temp-123
+sensor.airport: KJFK
 api:
   key: 00565729182a4505881b8e47a5
