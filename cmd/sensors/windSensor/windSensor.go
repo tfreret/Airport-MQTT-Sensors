@@ -20,7 +20,10 @@ func (wSensor *WindSensor) GetActualizeMeasure() (sensor.Measurement, error) {
 
 		return sensor.Measurement{}, fmt.Errorf("échec lors de l'obtention de la mesure : %w", err)
 	}
-	return sensor.Measurement{TypeMesure: "Wind", Value: apiResponse.Data[0].Wind.SpeedKph, Timestamp: time.Now().Format(time.RFC3339)}, nil
+	if len(apiResponse.Data) == 0 {
+		return sensor.Measurement{}, fmt.Errorf("réponse de l'API invalide")
+	}
+	return sensor.Measurement{TypeMesure: "Wind", Value: apiResponse.Data[0].Wind.SpeedKph, Timestamp: time.Now().UTC().Format(time.RFC3339)}, nil
 }
 
 func NewWindSensor(config sensor.ConfigSensor) *WindSensor {

@@ -16,7 +16,6 @@ func NewBrokerClient(id string, url string, port int, login string, password str
 	opts.SetClientID(id)
 	opts.SetUsername(login)
 	opts.SetPassword(password)
-
 	client := mqtt.NewClient(opts)
 
 	if token := client.Connect(); token.Wait() && token.Error() != nil {

@@ -35,8 +35,6 @@ cleanup() {
     for file in "${files[@]}"; do
         pkill -TERM -f "$build_dir/$file"
     done
-
-    pkill mosquitto
     
     wait
 }
