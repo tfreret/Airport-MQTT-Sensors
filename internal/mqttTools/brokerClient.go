@@ -11,14 +11,15 @@ type BrokerClient struct {
 }
 
 func NewBrokerClient(idClient ...string) BrokerClient {
-	broker := config.BROKER_URL
-
-	opts := mqtt.NewClientOptions().AddBroker(broker)
+	opts := mqtt.NewClientOptions()
+	opts.AddBroker(config.BROKER_URL)
+	opts.SetUsername(config.BROKER_USERNAME)
+	opts.SetPassword(config.BROKER_PASSWORD)
 
 	if len(idClient) == 1 {
 		opts.SetClientID(idClient[0])
 	}
-
+		
 	client := mqtt.NewClient(opts)
 
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
