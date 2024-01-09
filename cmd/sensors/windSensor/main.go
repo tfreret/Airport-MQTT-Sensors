@@ -8,7 +8,7 @@ import (
 
 func main() {
 	var (
-		configFile = flag.String("config", "sensor-wind-config.env", "Config file of the sensor")
+		configFile = flag.String("config", "sensor-wind-config.yaml", "Config file of the sensor")
 	)
 	flag.Parse()
 	config := sensor.ReadConfig(*configFile)

@@ -14,25 +14,37 @@ type Sensor struct {
 	brokerClient mqttTools.BrokerClient
 }
 
+type ConfigMqtt struct {
+	MqttUrl      string `mapstructure:"url"`
+	MqttPort     int    `mapstructure:"port"`
+	MqttQOS      byte   `mapstructure:"qos"`
+	MqttId       string `mapstructure:"id"`
+	MqttLogin    string `mapstructure:"login"`
+	MqttPassword string `mapstructure:"password"`
+}
+
+type ConfigApi struct {
+	Key string `mapstructure:"key"`
+}
+
+type ConfigUtilities struct {
+	Frequency int    `mapstructure:"frequency"`
+	Airport   string `mapstructure:"airport"`
+}
+
 type ConfigSensor struct {
-	MqttUrl         string `mapstructure:"MQTT_URL"`
-	MqttPort        int    `mapstructure:"MQTT_PORT"`
-	MqttQOS         byte   `mapstructure:"MQTT_QOS"`
-	MqttId          string `mapstructure:"MQTT_ID"`
-	MqttLogin       string `mapstructure:"MQTT_LOGIN"`
-	MqttPassword    string `mapstructure:"MQTT_PASSWORD"`
-	SensorAirport   string `mapstructure:"SENSOR_AIRPORT"`
-	SensorFrequency int    `mapstructure:"SENSOR_FREQUENCY"`
-	ApiKey          string `mapstructure:"API_KEY"`
+	Mqtt   ConfigMqtt      `mapstructure:"mqtt"`
+	Params ConfigUtilities `mapstructure:"sensor"`
+	Api    ConfigApi       `mapstructure:"api"`
 }
 
 func NewSensor(concreteSensor SensorInterface, config ConfigSensor) Sensor {
 	client := mqttTools.NewBrokerClient(
-		config.MqttId,
-		config.MqttUrl,
-		config.MqttPort,
-		config.MqttLogin,
-		config.MqttPassword)
+		config.Mqtt.MqttId,
+		config.Mqtt.MqttUrl,
+		config.Mqtt.MqttPort,
+		config.Mqtt.MqttLogin,
+		config.Mqtt.MqttPassword)
 	return Sensor{
 		ConfigSensor:    config,
 		SensorInterface: concreteSensor,
@@ -42,15 +54,15 @@ func NewSensor(concreteSensor SensorInterface, config ConfigSensor) Sensor {
 
 func (sensor Sensor) Send(mesure Measurement) {
 	sensor.brokerClient.SendMessage(
-		fmt.Sprintf("%s/%s/%s", sensor.SensorAirport, mesure.TypeMesure, sensor.MqttId),
+		fmt.Sprintf("%s/%s/%s", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId),
 		fmt.Sprintf("value:%f\ntime:%s\n", mesure.Value, mesure.Timestamp),
-		sensor.MqttQOS,
+		sensor.Mqtt.MqttQOS,
 	)
-	fmt.Printf("%s/%s/%s\n value:%f\n time:%s\n", sensor.SensorAirport, mesure.TypeMesure, sensor.MqttId, mesure.Value, mesure.Timestamp)
+	fmt.Printf("%s/%s/%s\n value:%f\n time:%s\n", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId, mesure.Value, mesure.Timestamp)
 }
 
 func (sensor Sensor) StartSendingData() {
-	ticker := time.NewTicker(time.Duration(sensor.SensorFrequency) * time.Second)
+	ticker := time.NewTicker(time.Duration(sensor.Params.Frequency) * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -68,7 +80,7 @@ func (sensor Sensor) StartSendingData() {
 
 func ReadConfig(filename string) ConfigSensor {
 	viper.SetConfigName(filename)
-	viper.SetConfigType("env")
+	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("./configs")
 

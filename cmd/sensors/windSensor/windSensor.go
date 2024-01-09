@@ -14,7 +14,7 @@ type WindSensor struct {
 }
 
 func (wSensor *WindSensor) GetActualizeMeasure() (sensor.Measurement, error) {
-	apiResponse, err := apiClient.GetApiResponse(config.CHECKWX_URL+wSensor.SensorAirport+"/decoded", config.CHECKWX_API_KEY)
+	apiResponse, err := apiClient.GetApiResponse(config.CHECKWX_URL+wSensor.Params.Airport+"/decoded", config.CHECKWX_API_KEY)
 	if err != nil {
 		log.Printf("Erreur lors de l'obtention de la réponse de l'API : %v", err)
 
