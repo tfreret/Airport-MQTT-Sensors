@@ -2,15 +2,10 @@ package main
 
 import (
 	"airport/internal/apiClient"
-<<<<<<< HEAD
-	"airport/internal/sensors/config"
-	"airport/internal/sensors/sensor"
-	"fmt"
-	"log"
-=======
 	"airport/internal/config"
 	"airport/internal/sensor"
->>>>>>> main
+	"fmt"
+	"log"
 	"time"
 )
 

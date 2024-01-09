@@ -1,0 +1,7 @@
+mqtt:
+  url: tcp://localhost
+  port: 1883
+  qos: 2
+  id: sensor-pressure-123
+api:
+  key: 00565729182a4505881b8e47a5
