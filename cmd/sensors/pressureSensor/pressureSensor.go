@@ -14,17 +14,21 @@ type PressureSensor struct {
 }
 
 func (pSensor *PressureSensor) GetActualizeMeasure() (sensor.Measurement, error) {
-	apiResponse, err := apiClient.GetApiResponse(config.CHECKWX_URL+pSensor.Airport+"/decoded", config.CHECKWX_API_KEY)
+	apiResponse, err := apiClient.GetApiResponse(config.CHECKWX_URL+pSensor.SensorAirport+"/decoded", pSensor.ApiKey)
 	if err != nil {
 		log.Printf("Erreur lors de l'obtention de la réponse de l'API : %v", err)
 
 		return sensor.Measurement{}, fmt.Errorf("échec lors de l'obtention de la mesure : %w", err)
 	}
-	return sensor.Measurement{TypeMesure: "Pres", Value: apiResponse.Data[0].Barometer.Hpa, Timestamp: time.Now().Format(time.RFC3339)}, nil
+
+	if len(apiResponse.Data) == 0 {
+		return sensor.Measurement{}, fmt.Errorf("réponse de l'API invalide")
+	}
+	return sensor.Measurement{TypeMesure: "Pres", Value: apiResponse.Data[0].Barometer.Hpa, Timestamp: time.Now().UTC().Format(time.RFC3339)}, nil
 }
 
-func NewPressureSensor(idSensor int, idAirport string) *PressureSensor {
+func NewPressureSensor(config sensor.ConfigSensor) *PressureSensor {
 	pSensor := &PressureSensor{}
-	pSensor.Sensor = sensor.NewSensor(pSensor, idSensor, idAirport)
+	pSensor.Sensor = sensor.NewSensor(pSensor, config)
 	return pSensor
 }
