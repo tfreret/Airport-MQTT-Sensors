@@ -4,7 +4,12 @@
 
 [lien kanban/jira](https://fil2026.atlassian.net/jira/software/projects/KAN/boards/1)
 
-Groupe members : 
+lancer le docker influxDB :
+docker compose --env-file  influxdb.env up
+
+
+
+Groupe members :
 - Tom Freret
 - Louis Painter
 - Matthis Bleuet
