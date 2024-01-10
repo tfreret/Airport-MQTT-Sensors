@@ -3,12 +3,10 @@ package main
 import (
 	"airport/internal/config"
 	"airport/internal/mqttTools"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
-	"regexp"
 	"strings"
 )
 
@@ -43,13 +41,13 @@ func main() {
 func saveMessage(topic string, payload []byte, outputDir string) {
 	fmt.Printf("Received message on topic : '%s'\n%s", topic, string(payload))
 
-	iata, measure, err := getIata(topic)
+	iata, measure, _, err := mqttTools.ParseTopic(topic)
 	if err != nil {
-		fmt.Println("Couldn't extract IATA code and measure type from string : " + topic)
+		fmt.Println("Couldn't extract IATA code; measure, and sensorId type from string : " + topic)
 		return
 	}
 
-	value, time, err := getPoint(string(payload))
+	value, time, err := mqttTools.ParseData(string(payload))
 	if err != nil {
 		fmt.Println("Couldn't extract value and time from payload : " + string(payload))
 	}
@@ -78,29 +76,4 @@ func save(iata, measure, value, time, outputDir string) {
 		fmt.Printf("Couldn't log data to file  '%s' : %s\n", file, err)
 		return
 	}
-}
-
-func getIata(topic string) (iata string, measure string, err error) {
-	r := regexp.MustCompile(`^data/(?P<IATA>[A-Z]*)/(?P<Measure>Pres|Temp|Wind)/.*$`)
-	matches := r.FindStringSubmatch(topic)
-	if len(matches) == 0 {
-		err = errors.New("Invalid topic : " + topic)
-	} else {
-		iata = matches[r.SubexpIndex("IATA")]
-		measure = matches[r.SubexpIndex("Measure")]
-	}
-	return
-
-}
-
-func getPoint(payload string) (value string, time string, err error) {
-	r := regexp.MustCompile(`value:(?P<Value>\d*.\d*)\ntime:(?P<Time>\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\dZ)`)
-	matches := r.FindStringSubmatch(payload)
-	if len(matches) == 0 {
-		err = errors.New("Invalid payload : " + payload)
-	} else {
-		value = matches[r.SubexpIndex("Value")]
-		time = matches[r.SubexpIndex("Time")]
-	}
-	return
 }

@@ -2,7 +2,7 @@ mqtt:
   url: ssl://5891f12726364e0cbda5ae805fad5a45.s2.eu.hivemq.cloud
   port: 8883
   qos: 2
-  id: sensor-pressure-123
+  id: sensor-wind-123
   login: tparchid
   password: IMTAtlantique44
 api:
