@@ -1,6 +1,8 @@
 package config
 
-const BROKER_URL = "ssl://5891f12726364e0cbda5ae805fad5a45.s2.eu.hivemq.cloud:8883"
+const BROKER_URL = "ssl://5891f12726364e0cbda5ae805fad5a45.s2.eu.hivemq.cloud"
+
+const BROKER_PORT = 8883
 
 const BROKER_USERNAME = "tparchid"
 
