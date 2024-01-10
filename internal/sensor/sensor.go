@@ -54,11 +54,11 @@ func NewSensor(concreteSensor SensorInterface, config ConfigSensor) Sensor {
 
 func (sensor Sensor) Send(mesure Measurement) {
 	sensor.brokerClient.SendMessage(
-		fmt.Sprintf("%s/%s/%s", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId),
+		fmt.Sprintf("data/%s/%s/%s", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId),
 		fmt.Sprintf("value:%f\ntime:%s\n", mesure.Value, mesure.Timestamp),
 		sensor.Mqtt.MqttQOS,
 	)
-	fmt.Printf("%s/%s/%s\n value:%f\n time:%s\n", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId, mesure.Value, mesure.Timestamp)
+	fmt.Printf("data/%s/%s/%s\n value:%f\n time:%s\n", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId, mesure.Value, mesure.Timestamp)
 }
 
 func (sensor Sensor) StartSendingData() {
