@@ -2,6 +2,7 @@ package sensor
 
 import (
 	"airport/internal/mqttTools"
+	"airport/internal/randomSensor"
 	"fmt"
 	"github.com/spf13/viper"
 	"os"
@@ -12,6 +13,7 @@ type Sensor struct {
 	SensorInterface
 	ConfigSensor
 	brokerClient mqttTools.BrokerClient
+	randomSensor.NumberGenerator
 }
 
 type ConfigMqtt struct {
@@ -38,7 +40,7 @@ type ConfigSensor struct {
 	Api    ConfigApi       `mapstructure:"api"`
 }
 
-func NewSensor(concreteSensor SensorInterface, config ConfigSensor) Sensor {
+func NewSensor(concreteSensor SensorInterface, config ConfigSensor, generator randomSensor.NumberGenerator) Sensor {
 	client := mqttTools.NewBrokerClient(
 		config.Mqtt.MqttId,
 		config.Mqtt.MqttUrl,
@@ -49,6 +51,7 @@ func NewSensor(concreteSensor SensorInterface, config ConfigSensor) Sensor {
 		ConfigSensor:    config,
 		SensorInterface: concreteSensor,
 		brokerClient:    client,
+		NumberGenerator: generator,
 	}
 }
 

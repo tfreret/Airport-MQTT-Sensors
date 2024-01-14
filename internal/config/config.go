@@ -11,3 +11,5 @@ const BROKER_PASSWORD = "IMTAtlantique44"
 const BROKER_QoS = 1
 
 const CHECKWX_URL = "https://api.checkwx.com/metar/"
+
+const USE_API = false
