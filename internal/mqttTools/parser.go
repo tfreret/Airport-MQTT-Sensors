@@ -19,7 +19,7 @@ func ParseTopic(topic string) (iata string, measure string, sensorID string, err
 }
 
 func ParseData(payload string) (value string, time string, err error) {
-	r := regexp.MustCompile(`value:(?P<Value>\d*.\d*)\ntime:(?P<Time>\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\dZ)`)
+	r := regexp.MustCompile(`(?P<Time>\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\dZ);(?P<Value>\d*.\d*)`)
 	matches := r.FindStringSubmatch(payload)
 	if len(matches) == 0 {
 		err = errors.New("Invalid payload : " + payload)

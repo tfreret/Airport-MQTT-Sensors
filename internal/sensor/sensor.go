@@ -4,9 +4,10 @@ import (
 	"airport/internal/mqttTools"
 	"airport/internal/randomSensor"
 	"fmt"
-	"github.com/spf13/viper"
 	"os"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 type Sensor struct {
@@ -58,7 +59,7 @@ func NewSensor(concreteSensor SensorInterface, config ConfigSensor, generator ra
 func (sensor Sensor) Send(mesure Measurement) {
 	sensor.brokerClient.SendMessage(
 		fmt.Sprintf("data/%s/%s/%s", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId),
-		fmt.Sprintf("value:%f\ntime:%s\n", mesure.Value, mesure.Timestamp),
+		fmt.Sprintf("%s;%f\n", mesure.Timestamp, mesure.Value),
 		sensor.Mqtt.MqttQOS,
 	)
 	fmt.Printf("data/%s/%s/%s\n value:%f\n time:%s\n", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId, mesure.Value, mesure.Timestamp)

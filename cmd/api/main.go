@@ -23,7 +23,7 @@ type DataRecord struct {
 
 // Fonction pour charger les variables d'environnement au démarrage du programme
 func init() {
-	envFile := filepath.Join("../internal/config", "influxdb.env")
+	envFile := filepath.Join("./internal/config", "influxdb.env")
 	err := godotenv.Load(envFile)
 	if err != nil {
 		log.Fatal("Erreur lors du chargement du fichier influxdb.env :", err)
