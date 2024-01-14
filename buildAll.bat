@@ -8,7 +8,7 @@ if not exist "%build_dir%" mkdir "%build_dir%"
 
 del /Q "%build_dir%\*"
 
-set "files=/sensors/pressureSensor /sensors/tempSensor /sensors/windSensor database-recorder"
+set "files=/sensors/pressureSensor /sensors/tempSensor /sensors/windSensor database-recorder api"
 
 for %%f in (%files%) do (
     echo Building %%f
@@ -21,6 +21,7 @@ echo Build process completed.
  start "" "./%build_dir%/sensors/tempSensor.exe"
  start "" "./%build_dir%/sensors/windSensor.exe"
  start "" "./%build_dir%/database-recorder.exe"
+ start "" "./%build_dir%/api.exe"
 
 ::cleanup
 ::echo Sensors stopping...
