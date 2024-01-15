@@ -1,17 +1,18 @@
 package main
 
 import (
-    "flag"
+	"airport/internal/sensor"
+	"flag"
+	"fmt"
 )
 
 func main() {
-    var (
-		idAirport  = flag.String("airport", "", "Airport id of this sensor")
-		idSensor   = flag.Int("id", 0, "Id of this sensor")
-        frequency  = flag.Int("frequency", 30, "Time frequence of sending data updates in second")
+	var (
+		configFile = flag.String("config", "sensor-temperature-config.yaml", "Config file of the sensor")
 	)
-
 	flag.Parse()
+	config := sensor.ReadSensorConfig(*configFile)
 
-    NewTempSensor(*idSensor, *idAirport).StartSendingData(*frequency)
+	fmt.Println("Using config :", config)
+	NewTempSensor(config).StartSendingData()
 }

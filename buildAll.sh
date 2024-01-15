@@ -6,11 +6,10 @@ if [ ! -d "$build_dir" ]; then
 fi
 
 if [ "$(ls -A "$build_dir")" ]; then
-    rm -r "$build_dir"/*
+    rm -r "${build_dir:?}/"*
 fi
 
-files=("sensors/pressureSensor" "sensors/tempSensor" "sensors/windSensor")
-args=("-id 44 -airport KJFK -frequency 10" "-id 55 -airport KJFK -frequency 10" "-id 66 -airport KJFK -frequency 10")
+files=("sensors/pressureSensor" "sensors/tempSensor" "sensors/windSensor" "file-recorder" "database-recorder" "api")
 
 for file in "${files[@]}"; do
     echo "Building $file"
@@ -24,25 +23,19 @@ echo "Build completed."
 
 for i in "${!files[@]}"; do
     file="${files[i]}"
-    arg="${args[i]}"
-
-    echo "Running $file with arguments: $arg"
-    ."/$build_dir/$file" $arg &
+    echo "Running $file"
+    ."/$build_dir/$file" &
 done
 
 
 cleanup() {
     echo "Process stopping..."
-    
     for file in "${files[@]}"; do
         pkill -TERM -f "$build_dir/$file"
     done
-    
     wait
 }
 
 trap 'cleanup' INT
-
 wait
-
 echo "All process stopped"
