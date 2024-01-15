@@ -2,6 +2,7 @@ package main
 
 import (
 	"airport/internal/sensor"
+	"airport/internal/config"
 	"flag"
 	"fmt"
 )
@@ -11,7 +12,7 @@ func main() {
 		configFile = flag.String("config", "sensor-temperature-config.yaml", "Config file of the sensor")
 	)
 	flag.Parse()
-	config := sensor.ReadSensorConfig(*configFile)
+	config := config.ReadSensorConfig[sensor.ConfigSensor](*configFile)
 
 	fmt.Println("Using config :", config)
 	NewTempSensor(config).StartSendingData()
