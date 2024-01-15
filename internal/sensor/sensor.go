@@ -25,9 +25,9 @@ func NewSensor(concreteSensor SensorInterface, idSensor int, idAirport string) S
 func (sensor Sensor) Send(mesure Measurement) {
 	sensor.brokerClient.SendMessage(
 		fmt.Sprintf("%s/%s/%d", sensor.Airport, mesure.TypeMesure, sensor.Id),
-		fmt.Sprintf("value:%f\ntime:%s\n", mesure.Value, mesure.Timestamp),
+		fmt.Sprintf("%s;%f", mesure.Timestamp, mesure.Value),
 	)
-	fmt.Printf("%s/%s/%d\n value:%f\n time:%s\n", sensor.Airport, mesure.TypeMesure, sensor.Id, mesure.Value, mesure.Timestamp)
+	fmt.Printf("%s/%s/%d\nvalue:%f\ntime:%s", sensor.Airport, mesure.TypeMesure, sensor.Id, mesure.Value, mesure.Timestamp)
 }
 
 func (sensor Sensor) StartSendingData(interval int) {
