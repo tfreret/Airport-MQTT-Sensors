@@ -31,9 +31,9 @@ func (tSensor *TempSensor) GetActualizeMeasure() (sensor.Measurement, error) {
 	}
 }
 
-func NewTempSensor(config sensor.ConfigSensor) *TempSensor {
+func NewTempSensor(configSensor sensor.ConfigSensor) *TempSensor {
 	tSensor := &TempSensor{}
 	nbGenerator := randomSensor.NewNumberGenerator(0)
-	tSensor.Sensor = sensor.NewSensor(tSensor, config, *nbGenerator)
+	tSensor.Sensor = sensor.NewSensor(tSensor, configSensor, *nbGenerator)
 	return tSensor
 }

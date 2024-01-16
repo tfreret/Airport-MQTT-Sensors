@@ -32,9 +32,9 @@ func (pSensor *PressureSensor) GetActualizeMeasure() (sensor.Measurement, error)
 	}
 }
 
-func NewPressureSensor(config sensor.ConfigSensor) *PressureSensor {
+func NewPressureSensor(configSensor sensor.ConfigSensor) *PressureSensor {
 	pSensor := &PressureSensor{}
 	nbGenerator := randomSensor.NewNumberGenerator(1013.25)
-	pSensor.Sensor = sensor.NewSensor(pSensor, config, *nbGenerator)
+	pSensor.Sensor = sensor.NewSensor(pSensor, configSensor, *nbGenerator)
 	return pSensor
 }
