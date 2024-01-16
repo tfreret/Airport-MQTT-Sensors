@@ -4,10 +4,7 @@ import (
 	"airport/internal/mqttTools"
 	"airport/internal/randomSensor"
 	"fmt"
-	"os"
 	"time"
-
-	"github.com/spf13/viper"
 )
 
 type Sensor struct {
@@ -15,30 +12,6 @@ type Sensor struct {
 	ConfigSensor
 	brokerClient mqttTools.BrokerClient
 	randomSensor.NumberGenerator
-}
-
-type ConfigMqtt struct {
-	MqttUrl      string `mapstructure:"url"`
-	MqttPort     int    `mapstructure:"port"`
-	MqttQOS      byte   `mapstructure:"qos"`
-	MqttId       string `mapstructure:"id"`
-	MqttLogin    string `mapstructure:"login"`
-	MqttPassword string `mapstructure:"password"`
-}
-
-type ConfigApi struct {
-	Key string `mapstructure:"key"`
-}
-
-type ConfigUtilities struct {
-	Frequency int    `mapstructure:"frequency"`
-	Airport   string `mapstructure:"airport"`
-}
-
-type ConfigSensor struct {
-	Mqtt   ConfigMqtt      `mapstructure:"mqtt"`
-	Params ConfigUtilities `mapstructure:"sensor"`
-	Api    ConfigApi       `mapstructure:"api"`
 }
 
 func NewSensor(concreteSensor SensorInterface, config ConfigSensor, generator randomSensor.NumberGenerator) Sensor {
@@ -80,24 +53,4 @@ func (sensor Sensor) StartSendingData() {
 			sensor.Send(measurement)
 		}
 	}
-}
-
-func ReadSensorConfig(filename string) ConfigSensor {
-	viper.SetConfigName(filename)
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("./configs")
-
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Println("Error while loading config :\n", err)
-		os.Exit(1)
-	}
-
-	var config ConfigSensor
-
-	if err := viper.UnmarshalExact(&config); err != nil {
-		fmt.Println("Error while parsing config :\n", err)
-		os.Exit(1)
-	}
-	return config
 }

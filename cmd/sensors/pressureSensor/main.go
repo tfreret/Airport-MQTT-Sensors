@@ -2,6 +2,7 @@ package main
 
 import (
 	"airport/internal/sensor"
+	"airport/internal/config"
 	"flag"
 	"fmt"
 )
@@ -11,8 +12,8 @@ func main() {
 		configFile = flag.String("config", "sensor-pressure-config.yaml", "Config file of the sensor")
 	)
 	flag.Parse()
-	config := sensor.ReadSensorConfig(*configFile)
+	configSensor := config.ReadConfig[sensor.ConfigSensor](*configFile)
 
-	fmt.Println("Using config :", config)
-	NewPressureSensor(config).StartSendingData()
+	fmt.Println("Using config :", configSensor)
+	NewPressureSensor(configSensor).StartSendingData()
 }

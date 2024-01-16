@@ -33,11 +33,11 @@ func (wSensor *WindSensor) GetActualizeMeasure() (sensor.Measurement, error) {
 	}
 }
 
-func NewWindSensor(config sensor.ConfigSensor) *WindSensor {
+func NewWindSensor(configSensor sensor.ConfigSensor) *WindSensor {
 	wSensor := &WindSensor{}
 	var min, max float64 = 0, 100
 	start := min + rand.Float64()*(max-min)
 	nbGenerator := randomSensor.NewNumberGenerator(start, min, max)
-	wSensor.Sensor = sensor.NewSensor(wSensor, config, *nbGenerator)
+	wSensor.Sensor = sensor.NewSensor(wSensor, configSensor, *nbGenerator)
 	return wSensor
 }
