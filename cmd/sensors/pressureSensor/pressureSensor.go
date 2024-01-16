@@ -7,6 +7,7 @@ import (
 	"airport/internal/sensor"
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 )
 
@@ -34,7 +35,9 @@ func (pSensor *PressureSensor) GetActualizeMeasure() (sensor.Measurement, error)
 
 func NewPressureSensor(config sensor.ConfigSensor) *PressureSensor {
 	pSensor := &PressureSensor{}
-	nbGenerator := randomSensor.NewNumberGenerator(1013.25)
+	var min, max float64 = 950, 1100
+	start := min + rand.Float64()*(max-min)
+	nbGenerator := randomSensor.NewNumberGenerator(start, min, max)
 	pSensor.Sensor = sensor.NewSensor(pSensor, config, *nbGenerator)
 	return pSensor
 }
