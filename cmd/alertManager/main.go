@@ -6,40 +6,50 @@ import (
 	"os/signal"
 	"strings"
 	"strconv"
+	"flag"
 
 	"airport/internal/mqttTools"
+	"airport/internal/config"
 )
 
 func main() {
-	const MAX_WIND_VALUE = 10.0
-	const MAX_TEMP_VALUE = 6.0
-	const MAX_PRES_VALUE = 1025.0
+	var (
+		configFile = flag.String("config", "alert-manager-config.yaml", "Config file of the sensor")
+	)
+	flag.Parse()
 
-	brokerClient := mqttTools.NewBrokerClient("alertManager")
+	config := config.ReadConfig[ConfigStruct](*configFile)
 
+	brokerClient := mqttTools.NewBrokerClient(
+		config.Mqtt.MqttId,
+		config.Mqtt.MqttUrl,
+		config.Mqtt.MqttPort,
+		config.Mqtt.MqttLogin,
+		config.Mqtt.MqttPassword,
+	)
 	
-	brokerClient.Subscribe("#", func(topic string, payload []byte){
+	brokerClient.Subscribe("data/#", func(topic string, payload []byte){
+
 		alert := false
 
 		topicElements := strings.Split(topic, "/")
 		msgElements := strings.Split(string(payload), ";")
-		if (len(topicElements) >= 2 && len(strings.Split(string(payload), ";")) >= 2){
-
-			value, _ := strconv.ParseFloat(msgElements[1], 64)
-
-			switch topicElements[1] {
-			case "Temp":
-				alert = value > MAX_TEMP_VALUE
-			case "Pres":
-				alert = value > MAX_PRES_VALUE
-			case "Wind":
-				alert = value > MAX_WIND_VALUE
+		if (len(topicElements) >= 3 && len(msgElements) >= 2){
+			if value, err := strconv.ParseFloat(msgElements[1], 64); err == nil {
+				switch topicElements[2] {
+				case "Temp":
+					alert = value > config.MaxValue.MaxTempValue
+				case "Pres":
+					alert = value > config.MaxValue.MaxPresValue
+				case "Wind":
+					alert = value > config.MaxValue.MaxWindValue
+				}
 			}
 		}
 
 		if (alert){
 			fmt.Printf("Alerte for topic %s, value : %s \n", topic, string(payload))
-			brokerClient.SendMessage(fmt.Sprintf("alert/%s", topic), string(payload))
+			brokerClient.SendMessage(fmt.Sprintf("alert/%s", topic), string(payload), config.Mqtt.MqttQOS)
 		}
 	})
 	
