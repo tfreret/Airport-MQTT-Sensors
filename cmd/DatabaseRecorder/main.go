@@ -29,7 +29,7 @@ func main() {
 	writeAPI := InfluxDBClient.WriteAPI(os.Getenv("INFLUXDB_ORG"), os.Getenv("INFLUXDB_BUCKET"))
 
 	brokerClient := mqttTools.NewBrokerClient(
-		"database-recorder",
+		"DatabaseRecorder",
 		config.BROKER_URL,
 		config.BROKER_PORT,
 		config.BROKER_USERNAME,
