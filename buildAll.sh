@@ -9,7 +9,7 @@ if [ "$(ls -A "$build_dir")" ]; then
     rm -r "${build_dir:?}/"*
 fi
 
-files=("sensors/pressureSensor" "sensors/tempSensor" "sensors/windSensor" "file-recorder" "database-recorder" "api" "alertManager")
+files=("sensors/pressureSensor" "sensors/tempSensor" "sensors/windSensor" "fileRecorder" "databaseRecorder" "api")
 
 for file in "${files[@]}"; do
     echo "Building $file"
