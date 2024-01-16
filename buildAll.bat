@@ -8,7 +8,7 @@ if not exist "%build_dir%" mkdir "%build_dir%"
 
 del /Q "%build_dir%\*"
 
-set "files=/sensors/pressureSensor /sensors/tempSensor /sensors/windSensor database-recorder api"
+set "files=/sensors/pressureSensor /sensors/tempSensor /sensors/windSensor databaseRecorder fileRecorder api"
 
 for %%f in (%files%) do (
     echo Building %%f
