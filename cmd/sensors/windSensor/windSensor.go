@@ -7,6 +7,7 @@ import (
 	"airport/internal/sensor"
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 )
 
@@ -32,9 +33,11 @@ func (wSensor *WindSensor) GetActualizeMeasure() (sensor.Measurement, error) {
 	}
 }
 
-func NewWindSensor(config sensor.ConfigSensor) *WindSensor {
+func NewWindSensor(configSensor sensor.ConfigSensor) *WindSensor {
 	wSensor := &WindSensor{}
-	nbGenerator := randomSensor.NewNumberGenerator(0)
-	wSensor.Sensor = sensor.NewSensor(wSensor, config, *nbGenerator)
+	var min, max float64 = 0, 100
+	start := min + rand.Float64()*(max-min)
+	nbGenerator := randomSensor.NewNumberGenerator(start, min, max)
+	wSensor.Sensor = sensor.NewSensor(wSensor, configSensor, *nbGenerator)
 	return wSensor
 }

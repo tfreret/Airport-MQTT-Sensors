@@ -21,7 +21,7 @@ func main() {
 		os.Exit(1)
 	}
 	brokerClient := mqttTools.NewBrokerClient(
-		"file-recorder",
+		"FileRecorder",
 		config.BROKER_URL,
 		config.BROKER_PORT,
 		config.BROKER_USERNAME,

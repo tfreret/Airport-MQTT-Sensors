@@ -16,8 +16,6 @@ import (
 )
 
 func main() {
-
-	//TODO add flag for influxdb env config
 	envFile := filepath.Join("./internal/config", "influxdb.env")
 
 	err := godotenv.Load(envFile)
@@ -29,14 +27,13 @@ func main() {
 	writeAPI := InfluxDBClient.WriteAPI(os.Getenv("INFLUXDB_ORG"), os.Getenv("INFLUXDB_BUCKET"))
 
 	brokerClient := mqttTools.NewBrokerClient(
-		"database-recorder",
+		"DatabaseRecorder",
 		config.BROKER_URL,
 		config.BROKER_PORT,
 		config.BROKER_USERNAME,
 		config.BROKER_PASSWORD,
 	)
 
-	//TODO refactor with file recorder save
 	brokerClient.Subscribe("data/#", func(topic string, message []byte) {
 		iata, measure, sensorId, err := mqttTools.ParseTopic(topic)
 		if err != nil {
@@ -71,6 +68,5 @@ func main() {
 	signal.Notify(stopSignal, os.Interrupt)
 
 	<-stopSignal
-
 	InfluxDBClient.Close()
 }
