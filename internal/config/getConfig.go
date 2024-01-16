@@ -6,7 +6,7 @@ import(
 	"github.com/spf13/viper"
 )
 
-func ReadSensorConfig[Config any](filename string) Config {
+func ReadConfig[Config any](filename string) Config {
 	viper.SetConfigName(filename)
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")

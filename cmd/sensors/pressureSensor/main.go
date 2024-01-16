@@ -12,8 +12,8 @@ func main() {
 		configFile = flag.String("config", "sensor-pressure-config.yaml", "Config file of the sensor")
 	)
 	flag.Parse()
-	config := config.ReadSensorConfig[sensor.ConfigSensor](*configFile)
+	configSensor := config.ReadConfig[sensor.ConfigSensor](*configFile)
 
-	fmt.Println("Using config :", config)
-	NewPressureSensor(config).StartSendingData()
+	fmt.Println("Using config :", configSensor)
+	NewPressureSensor(configSensor).StartSendingData()
 }

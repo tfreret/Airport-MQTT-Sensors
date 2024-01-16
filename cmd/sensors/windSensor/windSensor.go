@@ -32,9 +32,9 @@ func (wSensor *WindSensor) GetActualizeMeasure() (sensor.Measurement, error) {
 	}
 }
 
-func NewWindSensor(config sensor.ConfigSensor) *WindSensor {
+func NewWindSensor(configSensor sensor.ConfigSensor) *WindSensor {
 	wSensor := &WindSensor{}
 	nbGenerator := randomSensor.NewNumberGenerator(0)
-	wSensor.Sensor = sensor.NewSensor(wSensor, config, *nbGenerator)
+	wSensor.Sensor = sensor.NewSensor(wSensor, configSensor, *nbGenerator)
 	return wSensor
 }

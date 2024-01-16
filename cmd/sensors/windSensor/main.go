@@ -12,8 +12,8 @@ func main() {
 		configFile = flag.String("config", "sensor-wind-config.yaml", "Config file of the sensor")
 	)
 	flag.Parse()
-	config := config.ReadSensorConfig[sensor.ConfigSensor](*configFile)
+	configSensor := config.ReadConfig[sensor.ConfigSensor](*configFile)
 
-	fmt.Println("Using config :", config)
-	NewWindSensor(config).StartSendingData()
+	fmt.Println("Using config :", configSensor)
+	NewWindSensor(configSensor).StartSendingData()
 }

@@ -1,13 +1,8 @@
 package sensor
 
-type ConfigMqtt struct {
-	MqttUrl      string `mapstructure:"url"`
-	MqttPort     int    `mapstructure:"port"`
-	MqttQOS      byte   `mapstructure:"qos"`
-	MqttId       string `mapstructure:"id"`
-	MqttLogin    string `mapstructure:"login"`
-	MqttPassword string `mapstructure:"password"`
-}
+import(
+	"airport/internal/mqttTools"
+)
 
 type ConfigUtilities struct {
 	Frequency int    `mapstructure:"frequency"`
@@ -19,7 +14,7 @@ type ConfigApi struct {
 }
 
 type ConfigSensor struct {
-	Mqtt   ConfigMqtt      `mapstructure:"mqtt"`
-	Params ConfigUtilities `mapstructure:"sensor"`
-	Api    ConfigApi       `mapstructure:"api"`
+	Mqtt   mqttTools.ConfigMqtt		`mapstructure:"mqtt"`
+	Params ConfigUtilities			`mapstructure:"sensor"`
+	Api    ConfigApi				`mapstructure:"api"`
 }
