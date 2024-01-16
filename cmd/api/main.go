@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -16,9 +18,17 @@ import (
 )
 
 type DataRecord struct {
-	Time   time.Time          `json:"time"`
-	Tags   map[string]string  `json:"tags"`
-	Fields map[string]float64 `json:"fields"`
+	From        time.Time `json:"beginning time"`
+	To          time.Time `json:"ending time"`
+	MeasureType string    `json:"type"`
+	AirportId   string    `json:"id"`
+	Points      []Point   `json:"tab of points"`
+}
+
+type Point struct {
+	Time     time.Time
+	Value    interface{}
+	sensorID string
 }
 
 // Fonction pour charger les variables d'environnement au démarrage du programme
@@ -30,60 +40,143 @@ func init() {
 	}
 }
 
-func influxRequest(airportID, sensorID, sensorCat string) (map[time.Time]interface{}, error) {
+func influxRequest(airportID, sensorID, measureType string, from, to time.Time) (DataRecord, error) {
 	InfluxDBClient := influxdb2.NewClient(os.Getenv("INFLUXDB_URL"), os.Getenv("INFLUXDB_TOKEN"))
 	defer InfluxDBClient.Close()
 
 	queryAPI := InfluxDBClient.QueryAPI(os.Getenv("INFLUXDB_ORG"))
 
-	query := fmt.Sprintf(`
-		from(bucket:"%s")
-		|> range(start: -1h)
-		|> filter(fn: (r) => r._measurement == "sensor_data" and r.airport_id == "%s" and r.sensor_id == "%s" and r.sensor_category == "%s")
-	`, os.Getenv("INFLUXDB_BUCKET"), airportID, sensorID, sensorCat)
+	var builder strings.Builder
+	builder.WriteString("from(bucket:\"" + os.Getenv("INFLUXDB_BUCKET") + "\") ")
+
+	// Layout à respecter pour formatter les dates
+	timeLayout := `2006-01-02T15:04:05Z`
+
+	// Test des paramètres
+	if to.IsZero() && !from.IsZero() {
+		builder.WriteString("|> range(start: " + from.Format(timeLayout) + ") ")
+	} else if !to.IsZero() && !from.IsZero() {
+		builder.WriteString("|> range(start: " + from.Format(timeLayout) + ", stop: " + to.Format(timeLayout) + ") ")
+	} else {
+		builder.WriteString("|> range(start: -1h) ")
+	}
+
+	builder.WriteString("|> filter(fn: (r) => r._measurement == \"sensor_data\" ")
+
+	appendFilter(&builder, "airport_id", airportID)
+	appendFilter(&builder, "sensor_id", sensorID)
+	appendFilter(&builder, "sensor_category", measureType)
+
+	builder.WriteString(")")
+
+	query := builder.String()
+	fmt.Println(query)
 
 	result, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
-		return nil, err
+		return DataRecord{}, err
 	}
 	defer result.Close()
 
-	response := make(map[time.Time]interface{})
+	response := DataRecord{}
+
+	// est ce qu'on les met s'il n'y a pas de from/ to ?
+	response.From = from
+	response.To = to
+	response.AirportId = airportID
+	response.MeasureType = measureType
+
+	// Gérer le cas où il faut retrouver l'ID depuis la response
 	for result.Next() {
-		response[result.Record().Time()] = result.Record().Value()
+		point := Point{
+			Time:     result.Record().Time(),
+			Value:    result.Record().Value(),
+			sensorID: sensorID,
+		}
+		response.Points = append(response.Points, point)
 	}
 
 	return response, nil
 }
 
-func testHandler(w http.ResponseWriter, r *http.Request) {
+func appendFilter(builder *strings.Builder, field, value string) {
+	if value != "" {
+		builder.WriteString("and r." + field + " == \"" + value + "\" ")
+	}
+}
+
+// TODO changer les erreurs err.Error en internal server error pour sécurité
+func dataFromSensorCatAirportIDSensorIDHandler(w http.ResponseWriter, r *http.Request) {
 	// On récupère les variables de chemin
 	vars := mux.Vars(r)
 	airportID := vars["airportID"]
 	sensorID := vars["sensorID"]
 	sensorCat := vars["sensorCat"]
 
-	// on appelle la BD
-	response, err := influxRequest(airportID, sensorID, sensorCat)
+	from := r.URL.Query().Get("from")
+	to := r.URL.Query().Get("to")
+	parsedFrom, parsedTo, err := checkDates(from, to)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		handleError(w, err, "Erreur lors de la vérification des dates", http.StatusInternalServerError)
+		return
+	}
+
+	// on appelle la BD
+	response, err := influxRequest(airportID, sensorID, sensorCat, parsedFrom, parsedTo)
+	if err != nil {
+		handleError(w, err, "Erreur lors de la requête à la base de données", http.StatusInternalServerError)
 		return
 	}
 
 	// on formatte la réponse
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		handleError(w, err, "Erreur lors du formatage de la réponse en JSON", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonResponse)
+	_, err = w.Write(jsonResponse)
+	if err != nil {
+		handleError(w, err, "Erreur dans l'écriture de la réponse", http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleError(w http.ResponseWriter, err error, message string, status int) {
+	log.Println(message, ":", err)
+	http.Error(w, message, status)
+}
+
+func checkDates(from, to string) (time.Time, time.Time, error) {
+	layout := "2006-01-02T15:04:05Z"
+
+	parsedFrom, errFrom := time.Parse(layout, from)
+	if errFrom != nil && from != "" {
+		return time.Time{}, time.Time{}, fmt.Errorf("erreur lors de la conversion de la date from en time.Time: %w", errFrom)
+	}
+
+	parsedTo, errTo := time.Parse(layout, to)
+	if errTo != nil && to != "" {
+		return time.Time{}, time.Time{}, fmt.Errorf("erreur lors de la conversion de la date to en time.Time: %w", errTo)
+	}
+
+	if !parsedTo.IsZero() && parsedTo.Before(parsedFrom) {
+		return time.Time{}, time.Time{}, errors.New("date de fin avant la date de début")
+	}
+
+	//si date de fin après time.Now() -> la query request time.Now(), mais qu'est ce que je renvoie dans la DataStruct ?
+
+	return parsedFrom, parsedTo, nil
 }
 
 func main() {
 	r := mux.NewRouter()
-	r.HandleFunc("/{sensorCat}/{airportID}/{sensorID}", testHandler).Methods("GET")
+	r.HandleFunc("/{sensorCat}/{airportID}/{sensorID}", dataFromSensorCatAirportIDSensorIDHandler).Methods("GET")
 
-	http.ListenAndServe(":8080", r)
+	err := http.ListenAndServe(":8080", r)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
