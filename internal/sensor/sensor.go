@@ -4,6 +4,7 @@ import (
 	"airport/internal/mqttTools"
 	"airport/internal/randomSensor"
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -32,10 +33,10 @@ func NewSensor(concreteSensor SensorInterface, config ConfigSensor, generator ra
 func (sensor Sensor) Send(mesure Measurement) {
 	sensor.brokerClient.SendMessage(
 		fmt.Sprintf("data/%s/%s/%s", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId),
-		fmt.Sprintf("%s;%f", mesure.Timestamp, mesure.Value),
+		fmt.Sprintf("%s;%f", mesure.Timestamp, math.Round(mesure.Value*10)/10),
 		sensor.Mqtt.MqttQOS,
 	)
-	fmt.Printf("data/%s/%s/%s\n value:%f\n time:%s\n", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId, mesure.Value, mesure.Timestamp)
+	fmt.Printf("data/%s/%s/%s\n value:%f\n time:%s\n", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId, math.Round(mesure.Value*10)/10, mesure.Timestamp)
 }
 
 func (sensor Sensor) StartSendingData() {

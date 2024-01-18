@@ -11,7 +11,10 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/mrz1836/go-sanitize"
 
 	"github.com/gorilla/mux"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -31,6 +34,21 @@ type Point struct {
 	Time     time.Time
 	Value    interface{}
 	sensorID string
+}
+
+type Sensor struct {
+	ID          string
+	MeasureType string
+}
+
+var dbClient influxdb2.Client
+var dbLock = sync.Mutex{}
+
+func getDBClient() influxdb2.Client {
+	if dbClient == nil {
+		dbClient = influxdb2.NewClient(ConfigInflux.InfluxDBURL, ConfigInflux.InfluxDBToken)
+	}
+	return dbClient
 }
 
 func influxRequest(airportID, sensorID, measureType string, from, to time.Time) (DataRecord, error) {
@@ -98,6 +116,95 @@ func appendFilter(builder *strings.Builder, field, value string) {
 	}
 }
 
+func writeJson(w *http.ResponseWriter, response any) {
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		handleError(*w, err, "Erreur lors du formatage de la réponse en JSON", http.StatusInternalServerError)
+		return
+	}
+
+	(*w).Header().Set("Content-Type", "application/json")
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	_, err = (*w).Write(jsonResponse)
+	if err != nil {
+		handleError(*w, err, "Erreur dans l'écriture de la réponse", http.StatusInternalServerError)
+		return
+	}
+}
+
+func getSensors(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	airportID := vars["airportID"]
+
+	dbLock.Lock()
+	defer dbLock.Unlock()
+
+	client := getDBClient()
+	queryAPI := client.QueryAPI(ConfigInflux.InfluxDBOrg)
+
+	var builder strings.Builder
+	builder.WriteString("from(bucket:\"" + ConfigInflux.InfluxDBBucket + "\") ")
+	builder.WriteString(
+		"|> range(start: 0)\n" +
+			"|> filter(fn: (r) => r.airport_id == \"" + sanitize.Alpha(airportID, false) + "\")\n" +
+			"|> group()\n" +
+			"|> unique(column: \"sensor_id\")\n" +
+			"|> keep(columns: [\"sensor_id\", \"sensor_category\"])")
+
+	query := builder.String()
+
+	result, err := queryAPI.Query(context.Background(), query)
+	if err != nil {
+		handleError(w, err, "Erreur lors de la récupération des capteurs", http.StatusInternalServerError)
+		return
+	}
+	defer result.Close()
+
+	var response = make([]Sensor, 0)
+	for result.Next() {
+		sensor := Sensor{
+			ID:          fmt.Sprint(result.Record().ValueByKey("sensor_id")),
+			MeasureType: fmt.Sprint(result.Record().ValueByKey("sensor_category")),
+		}
+		response = append(response, sensor)
+	}
+
+	writeJson(&w, response)
+}
+
+func getAirports(w http.ResponseWriter, _ *http.Request) {
+	dbLock.Lock()
+	defer dbLock.Unlock()
+
+	client := getDBClient()
+	queryAPI := client.QueryAPI(ConfigInflux.InfluxDBOrg)
+
+	var builder strings.Builder
+	builder.WriteString("from(bucket:\"" + ConfigInflux.InfluxDBBucket + "\") ")
+
+	builder.WriteString(
+		"|> range(start: 0)\n" +
+			"|> group()\n" +
+			"|> distinct(column: \"airport_id\")\n" +
+			"|> keep(columns: [\"_value\"])")
+
+	query := builder.String()
+
+	result, err := queryAPI.Query(context.Background(), query)
+	if err != nil {
+		handleError(w, err, "Erreur lors de la récupération des aéroports", http.StatusInternalServerError)
+		return
+	}
+	defer result.Close()
+
+	var response []string
+	for result.Next() {
+		response = append(response, fmt.Sprint(result.Record().Value()))
+	}
+
+	writeJson(&w, response)
+}
+
 // TODO changer les erreurs err.Error en internal server error pour sécurité
 func dataFromSensorCatAirportIDSensorIDHandler(w http.ResponseWriter, r *http.Request) {
 	// On récupère les variables de chemin
@@ -121,19 +228,7 @@ func dataFromSensorCatAirportIDSensorIDHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// on formatte la réponse
-	jsonResponse, err := json.Marshal(response)
-	if err != nil {
-		handleError(w, err, "Erreur lors du formatage de la réponse en JSON", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(jsonResponse)
-	if err != nil {
-		handleError(w, err, "Erreur dans l'écriture de la réponse", http.StatusInternalServerError)
-		return
-	}
+	writeJson(&w, response)
 }
 
 func handleError(w http.ResponseWriter, err error, message string, status int) {
@@ -171,8 +266,9 @@ func main() {
 	ConfigInflux = config.ReadEnv[mqttTools.ConfigInfluxDB](*influxEnvFile)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/{sensorCat}/{airportID}/{sensorID}", dataFromSensorCatAirportIDSensorIDHandler).Methods("GET")
-
+	r.HandleFunc("/{sensorCat}/{airportID}/{sensorID}", dataFromSensorCatAirportIDSensorIDHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/airports", getAirports).Methods("GET", "OPTIONS")
+	r.HandleFunc("/sensors/{airportID}", getSensors).Methods("GET", "OPTIONS")
 	err := http.ListenAndServe(":8080", r)
 	if err != nil {
 		log.Println(err)
