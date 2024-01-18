@@ -1,5 +1,9 @@
 package mqttTools
 
+type MonoConfigMqtt struct {
+	Mqtt ConfigMqtt `mapstructure:"mqtt"`
+}
+
 type ConfigMqtt struct {
 	MqttUrl      string `mapstructure:"url"`
 	MqttPort     int    `mapstructure:"port"`

@@ -1,21 +1,23 @@
 package main
 
 import (
+	"airport/internal/config"
+	"airport/internal/mqttTools"
 	"context"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/joho/godotenv"
 )
+
+var ConfigInflux mqttTools.ConfigInfluxDB
 
 type DataRecord struct {
 	From        time.Time `json:"beginning time"`
@@ -31,23 +33,14 @@ type Point struct {
 	sensorID string
 }
 
-// Fonction pour charger les variables d'environnement au démarrage du programme
-func init() {
-	envFile := filepath.Join("./internal/config", "influxdb.env")
-	err := godotenv.Load(envFile)
-	if err != nil {
-		log.Fatal("Erreur lors du chargement du fichier influxdb.env :", err)
-	}
-}
-
 func influxRequest(airportID, sensorID, measureType string, from, to time.Time) (DataRecord, error) {
-	InfluxDBClient := influxdb2.NewClient(os.Getenv("INFLUXDB_URL"), os.Getenv("INFLUXDB_TOKEN"))
+	InfluxDBClient := influxdb2.NewClient(ConfigInflux.InfluxDBURL, ConfigInflux.InfluxDBToken)
 	defer InfluxDBClient.Close()
 
-	queryAPI := InfluxDBClient.QueryAPI(os.Getenv("INFLUXDB_ORG"))
+	queryAPI := InfluxDBClient.QueryAPI(ConfigInflux.InfluxDBOrg)
 
 	var builder strings.Builder
-	builder.WriteString("from(bucket:\"" + os.Getenv("INFLUXDB_BUCKET") + "\") ")
+	builder.WriteString("from(bucket:\"" + ConfigInflux.InfluxDBBucket + "\") ")
 
 	// Layout à respecter pour formatter les dates
 	timeLayout := `2006-01-02T15:04:05Z`
@@ -171,6 +164,12 @@ func checkDates(from, to string) (time.Time, time.Time, error) {
 }
 
 func main() {
+	var (
+		influxEnvFile = flag.String("influx", "influxdb.env", ".env file for influx db")
+	)
+	flag.Parse()
+	ConfigInflux = config.ReadEnv[mqttTools.ConfigInfluxDB](*influxEnvFile)
+
 	r := mux.NewRouter()
 	r.HandleFunc("/{sensorCat}/{airportID}/{sensorID}", dataFromSensorCatAirportIDSensorIDHandler).Methods("GET")
 

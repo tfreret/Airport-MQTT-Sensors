@@ -3,35 +3,39 @@ package main
 import (
 	"airport/internal/config"
 	"airport/internal/mqttTools"
+	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strconv"
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	envFile := filepath.Join("./internal/config", "influxdb.env")
+	var (
+		influxEnvFile = flag.String("influx", "influxdb.env", ".env file for influx db")
+	)
+	var (
+		configMQTTFile = flag.String("config", "database-recorder.yaml", "Config file of the database recorder")
+	)
+	flag.Parse()
 
-	err := godotenv.Load(envFile)
-	if err != nil {
-		log.Fatal("Erreur lors du chargement du fichier influxdb.env :", err)
-	}
+	configMQTT := config.ReadConfig[mqttTools.MonoConfigMqtt](*configMQTTFile)
+	configInfluxDB := config.ReadEnv[mqttTools.ConfigInfluxDB](*influxEnvFile)
 
-	InfluxDBClient := influxdb2.NewClient(os.Getenv("INFLUXDB_URL"), os.Getenv("INFLUXDB_TOKEN"))
-	writeAPI := InfluxDBClient.WriteAPI(os.Getenv("INFLUXDB_ORG"), os.Getenv("INFLUXDB_BUCKET"))
+	fmt.Println("Using config :", configMQTT, configInfluxDB)
+
+	InfluxDBClient := influxdb2.NewClient(configInfluxDB.InfluxDBURL, configInfluxDB.InfluxDBToken)
+	writeAPI := InfluxDBClient.WriteAPI(configInfluxDB.InfluxDBOrg, configInfluxDB.InfluxDBBucket)
 
 	brokerClient := mqttTools.NewBrokerClient(
-		"DatabaseRecorder",
-		config.BROKER_URL,
-		config.BROKER_PORT,
-		config.BROKER_USERNAME,
-		config.BROKER_PASSWORD,
+		configMQTT.Mqtt.MqttId,
+		configMQTT.Mqtt.MqttUrl,
+		configMQTT.Mqtt.MqttPort,
+		configMQTT.Mqtt.MqttLogin,
+		configMQTT.Mqtt.MqttPassword,
 	)
 
 	brokerClient.Subscribe("data/#", func(topic string, message []byte) {
