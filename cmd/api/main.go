@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -29,6 +30,16 @@ type Point struct {
 	Time     time.Time
 	Value    interface{}
 	sensorID string
+}
+
+var dbClient influxdb2.Client
+var dbLock = sync.Mutex{}
+
+func getDBClient() influxdb2.Client {
+	if dbClient == nil {
+		dbClient = influxdb2.NewClient(os.Getenv("INFLUXDB_URL"), os.Getenv("INFLUXDB_TOKEN"))
+	}
+	return dbClient
 }
 
 // Fonction pour charger les variables d'environnement au démarrage du programme
@@ -105,6 +116,51 @@ func appendFilter(builder *strings.Builder, field, value string) {
 	}
 }
 
+func getAirports(w http.ResponseWriter, r *http.Request) {
+	dbLock.Lock()
+	defer dbLock.Unlock()
+
+	client := getDBClient()
+	queryAPI := client.QueryAPI(os.Getenv("INFLUXDB_ORG"))
+
+	var builder strings.Builder
+	builder.WriteString("from(bucket:\"" + os.Getenv("INFLUXDB_BUCKET") + "\") ")
+
+	builder.WriteString(
+		"|> range(start: 0)\n" +
+			"|> group()\n" +
+			"|> distinct(column: \"airport_id\")\n" +
+			"|> keep(columns: [\"_value\"])")
+
+	query := builder.String()
+
+	result, err := queryAPI.Query(context.Background(), query)
+	if err != nil {
+		handleError(w, err, "Erreur lors de la récupération des aéroports", http.StatusInternalServerError)
+		return
+	}
+	defer result.Close()
+
+	var response []string
+	// Gérer le cas où il faut retrouver l'ID depuis la response
+	for result.Next() {
+		response = append(response, fmt.Sprint(result.Record().Value()))
+	}
+
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		handleError(w, err, "Erreur lors du formatage de la réponse en JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(jsonResponse)
+	if err != nil {
+		handleError(w, err, "Erreur dans l'écriture de la réponse", http.StatusInternalServerError)
+		return
+	}
+}
+
 // TODO changer les erreurs err.Error en internal server error pour sécurité
 func dataFromSensorCatAirportIDSensorIDHandler(w http.ResponseWriter, r *http.Request) {
 	// On récupère les variables de chemin
@@ -173,7 +229,7 @@ func checkDates(from, to string) (time.Time, time.Time, error) {
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/{sensorCat}/{airportID}/{sensorID}", dataFromSensorCatAirportIDSensorIDHandler).Methods("GET")
-
+	r.HandleFunc("/airports", getAirports).Methods("GET")
 	err := http.ListenAndServe(":8080", r)
 	if err != nil {
 		log.Println(err)
