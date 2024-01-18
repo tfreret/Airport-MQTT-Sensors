@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mrz1836/go-sanitize"
 	"log"
 	"net/http"
 	"os"
@@ -30,6 +31,11 @@ type Point struct {
 	Time     time.Time
 	Value    interface{}
 	sensorID string
+}
+
+type Sensor struct {
+	ID          string
+	MeasureType string
 }
 
 var dbClient influxdb2.Client
@@ -116,7 +122,58 @@ func appendFilter(builder *strings.Builder, field, value string) {
 	}
 }
 
-func getAirports(w http.ResponseWriter, r *http.Request) {
+func getSensors(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	airportID := vars["airportID"]
+
+	dbLock.Lock()
+	defer dbLock.Unlock()
+
+	client := getDBClient()
+	queryAPI := client.QueryAPI(os.Getenv("INFLUXDB_ORG"))
+
+	var builder strings.Builder
+	builder.WriteString("from(bucket:\"" + os.Getenv("INFLUXDB_BUCKET") + "\") ")
+	builder.WriteString(
+		"|> range(start: 0)\n" +
+			"|> filter(fn: (r) => r.airport_id == \"" + sanitize.Alpha(airportID, false) + "\")\n" +
+			"|> group()\n" +
+			"|> unique(column: \"sensor_id\")\n" +
+			"|> keep(columns: [\"sensor_id\", \"sensor_category\"])")
+
+	query := builder.String()
+
+	result, err := queryAPI.Query(context.Background(), query)
+	if err != nil {
+		handleError(w, err, "Erreur lors de la récupération des capteurs", http.StatusInternalServerError)
+		return
+	}
+	defer result.Close()
+
+	var response = make([]Sensor, 0)
+	for result.Next() {
+		sensor := Sensor{
+			ID:          fmt.Sprint(result.Record().ValueByKey("sensor_id")),
+			MeasureType: fmt.Sprint(result.Record().ValueByKey("sensor_category")),
+		}
+		response = append(response, sensor)
+	}
+
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		handleError(w, err, "Erreur lors du formatage de la réponse en JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(jsonResponse)
+	if err != nil {
+		handleError(w, err, "Erreur dans l'écriture de la réponse", http.StatusInternalServerError)
+		return
+	}
+}
+
+func getAirports(w http.ResponseWriter, _ *http.Request) {
 	dbLock.Lock()
 	defer dbLock.Unlock()
 
@@ -142,7 +199,6 @@ func getAirports(w http.ResponseWriter, r *http.Request) {
 	defer result.Close()
 
 	var response []string
-	// Gérer le cas où il faut retrouver l'ID depuis la response
 	for result.Next() {
 		response = append(response, fmt.Sprint(result.Record().Value()))
 	}
@@ -230,6 +286,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/{sensorCat}/{airportID}/{sensorID}", dataFromSensorCatAirportIDSensorIDHandler).Methods("GET")
 	r.HandleFunc("/airports", getAirports).Methods("GET")
+	r.HandleFunc("/sensors/{airportID}", getSensors).Methods("GET")
 	err := http.ListenAndServe(":8080", r)
 	if err != nil {
 		log.Println(err)
