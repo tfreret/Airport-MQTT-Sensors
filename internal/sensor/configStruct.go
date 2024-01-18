@@ -4,13 +4,17 @@ import(
 	"airport/internal/mqttTools"
 )
 
+type ConfigUtilities struct {
+	Frequency int    `mapstructure:"frequency"`
+	Airport   string `mapstructure:"airport"`
+}
+
+type ConfigApi struct {
+	Key string `mapstructure:"key"`
+}
+
 type ConfigSensor struct {
-	Mqtt   mqttTools.ConfigMqtt		`mapstructure:"mqtt"`
-	Params struct {
-		Frequency int    `mapstructure:"frequency"`
-		Airport   string `mapstructure:"airport"`
-	}			`mapstructure:"sensor"` 
-	Api    struct {
-		Key string `mapstructure:"key"`
-	}				`mapstructure:"api"`
+	mqttTools.ConfigMqtt		`mapstructure:"mqtt"`
+	ConfigUtilities				`mapstructure:"sensor"`
+	ConfigApi					`mapstructure:"api"`
 }

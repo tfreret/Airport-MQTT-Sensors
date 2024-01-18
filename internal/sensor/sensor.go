@@ -16,11 +16,11 @@ type Sensor struct {
 
 func NewSensor(concreteSensor SensorInterface, config ConfigSensor, generator randomSensor.NumberGenerator) Sensor {
 	client := mqttTools.NewBrokerClient(
-		config.Mqtt.MqttId,
-		config.Mqtt.MqttUrl,
-		config.Mqtt.MqttPort,
-		config.Mqtt.MqttLogin,
-		config.Mqtt.MqttPassword)
+		config.MqttId,
+		config.MqttUrl,
+		config.MqttPort,
+		config.MqttLogin,
+		config.MqttPassword)
 	return Sensor{
 		ConfigSensor:    config,
 		SensorInterface: concreteSensor,
@@ -31,15 +31,15 @@ func NewSensor(concreteSensor SensorInterface, config ConfigSensor, generator ra
 
 func (sensor Sensor) Send(mesure Measurement) {
 	sensor.brokerClient.SendMessage(
-		fmt.Sprintf("data/%s/%s/%s", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId),
+		fmt.Sprintf("data/%s/%s/%s", sensor.Airport, mesure.TypeMesure, sensor.MqttId),
 		fmt.Sprintf("%s;%f", mesure.Timestamp, mesure.Value),
-		sensor.Mqtt.MqttQOS,
+		sensor.MqttQOS,
 	)
-	fmt.Printf("data/%s/%s/%s\n value:%f\n time:%s\n", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId, mesure.Value, mesure.Timestamp)
+	fmt.Printf("data/%s/%s/%s\n value:%f\n time:%s\n", sensor.Airport, mesure.TypeMesure, sensor.MqttId, mesure.Value, mesure.Timestamp)
 }
 
 func (sensor Sensor) StartSendingData() {
-	ticker := time.NewTicker(time.Duration(sensor.Params.Frequency) * time.Second)
+	ticker := time.NewTicker(time.Duration(sensor.Frequency) * time.Second)
 	defer ticker.Stop()
 
 	for {

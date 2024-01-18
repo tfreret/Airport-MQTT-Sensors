@@ -17,7 +17,7 @@ type PressureSensor struct {
 
 func (pSensor *PressureSensor) GetActualizeMeasure() (sensor.Measurement, error) {
 	if config.USE_API {
-		apiResponse, err := apiClient.GetApiResponse(config.CHECKWX_URL+pSensor.Params.Airport+"/decoded", pSensor.Api.Key)
+		apiResponse, err := apiClient.GetApiResponse(config.CHECKWX_URL+pSensor.Airport+"/decoded", pSensor.Key)
 		if err != nil {
 			log.Printf("Erreur lors de l'obtention de la réponse de l'API : %v", err)
 

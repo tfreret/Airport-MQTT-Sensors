@@ -21,11 +21,11 @@ func main() {
 	config := config.ReadConfig[ConfigStruct](*configFile)
 
 	brokerClient := mqttTools.NewBrokerClient(
-		config.Mqtt.MqttId,
-		config.Mqtt.MqttUrl,
-		config.Mqtt.MqttPort,
-		config.Mqtt.MqttLogin,
-		config.Mqtt.MqttPassword,
+		config.MqttId,
+		config.MqttUrl,
+		config.MqttPort,
+		config.MqttLogin,
+		config.MqttPassword,
 	)
 	
 	brokerClient.Subscribe("data/#", func(topic string, payload []byte){
@@ -38,18 +38,18 @@ func main() {
 			if value, err := strconv.ParseFloat(msgElements[1], 64); err == nil {
 				switch topicElements[2] {
 				case "Temp":
-					alert = value > config.MaxValue.MaxTempValue
+					alert = value > config.MaxTempValue
 				case "Pres":
-					alert = value > config.MaxValue.MaxPresValue
+					alert = value > config.MaxPresValue
 				case "Wind":
-					alert = value > config.MaxValue.MaxWindValue
+					alert = value > config.MaxWindValue
 				}
 			}
 		}
 
 		if (alert){
 			fmt.Printf("Alerte for topic %s, value : %s \n", topic, string(payload))
-			brokerClient.SendMessage(fmt.Sprintf("alert/%s", topic), string(payload), config.Mqtt.MqttQOS)
+			brokerClient.SendMessage(fmt.Sprintf("alert/%s", topic), string(payload), config.MqttQOS)
 		}
 	})
 	
