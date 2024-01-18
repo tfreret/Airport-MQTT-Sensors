@@ -122,6 +122,22 @@ func appendFilter(builder *strings.Builder, field, value string) {
 	}
 }
 
+func writeJson(w *http.ResponseWriter, response any) {
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		handleError(*w, err, "Erreur lors du formatage de la réponse en JSON", http.StatusInternalServerError)
+		return
+	}
+
+	(*w).Header().Set("Content-Type", "application/json")
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	_, err = (*w).Write(jsonResponse)
+	if err != nil {
+		handleError(*w, err, "Erreur dans l'écriture de la réponse", http.StatusInternalServerError)
+		return
+	}
+}
+
 func getSensors(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	airportID := vars["airportID"]
@@ -159,18 +175,7 @@ func getSensors(w http.ResponseWriter, r *http.Request) {
 		response = append(response, sensor)
 	}
 
-	jsonResponse, err := json.Marshal(response)
-	if err != nil {
-		handleError(w, err, "Erreur lors du formatage de la réponse en JSON", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(jsonResponse)
-	if err != nil {
-		handleError(w, err, "Erreur dans l'écriture de la réponse", http.StatusInternalServerError)
-		return
-	}
+	writeJson(&w, response)
 }
 
 func getAirports(w http.ResponseWriter, _ *http.Request) {
@@ -203,18 +208,7 @@ func getAirports(w http.ResponseWriter, _ *http.Request) {
 		response = append(response, fmt.Sprint(result.Record().Value()))
 	}
 
-	jsonResponse, err := json.Marshal(response)
-	if err != nil {
-		handleError(w, err, "Erreur lors du formatage de la réponse en JSON", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(jsonResponse)
-	if err != nil {
-		handleError(w, err, "Erreur dans l'écriture de la réponse", http.StatusInternalServerError)
-		return
-	}
+	writeJson(&w, response)
 }
 
 // TODO changer les erreurs err.Error en internal server error pour sécurité
@@ -240,19 +234,7 @@ func dataFromSensorCatAirportIDSensorIDHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// on formatte la réponse
-	jsonResponse, err := json.Marshal(response)
-	if err != nil {
-		handleError(w, err, "Erreur lors du formatage de la réponse en JSON", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(jsonResponse)
-	if err != nil {
-		handleError(w, err, "Erreur dans l'écriture de la réponse", http.StatusInternalServerError)
-		return
-	}
+	writeJson(&w, response)
 }
 
 func handleError(w http.ResponseWriter, err error, message string, status int) {
@@ -284,9 +266,9 @@ func checkDates(from, to string) (time.Time, time.Time, error) {
 
 func main() {
 	r := mux.NewRouter()
-	r.HandleFunc("/{sensorCat}/{airportID}/{sensorID}", dataFromSensorCatAirportIDSensorIDHandler).Methods("GET")
-	r.HandleFunc("/airports", getAirports).Methods("GET")
-	r.HandleFunc("/sensors/{airportID}", getSensors).Methods("GET")
+	r.HandleFunc("/{sensorCat}/{airportID}/{sensorID}", dataFromSensorCatAirportIDSensorIDHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/airports", getAirports).Methods("GET", "OPTIONS")
+	r.HandleFunc("/sensors/{airportID}", getSensors).Methods("GET", "OPTIONS")
 	err := http.ListenAndServe(":8080", r)
 	if err != nil {
 		log.Println(err)
