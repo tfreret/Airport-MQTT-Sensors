@@ -2,10 +2,12 @@ package mqttTools
 
 import (
 	"fmt"
-	"log"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/sirupsen/logrus"
 )
+
+var log = logrus.New()
 
 type BrokerClient struct {
 	client mqtt.Client
@@ -30,7 +32,7 @@ func (brokerClient BrokerClient) SendMessage(topic, message string, qos byte) {
 	token.Wait()
 }
 
-func (brokerClient BrokerClient) Subscribe(topic string, qos byte, callBack func(topic string, message []byte)) {
+func (brokerClient BrokerClient) Subscribe(topic string, callBack func(topic string, message []byte), qos byte) {
 	if token := brokerClient.client.Subscribe(topic, qos,
 		func(client mqtt.Client, msg mqtt.Message) {
 			callBack(msg.Topic(), msg.Payload())

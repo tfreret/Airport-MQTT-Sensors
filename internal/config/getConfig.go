@@ -1,11 +1,13 @@
 package config
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
+
+var log = logrus.New()
 
 func ReadConfig[Config any](filename string) Config {
 	viper.SetConfigName(filename)
@@ -14,14 +16,14 @@ func ReadConfig[Config any](filename string) Config {
 	viper.AddConfigPath("./configs")
 
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Println("Error while loading config :\n", err)
+		log.Error("Error while loading config : ", err)
 		os.Exit(1)
 	}
 
 	var config Config
 
 	if err := viper.UnmarshalExact(&config); err != nil {
-		fmt.Println("Error while parsing config :\n", err)
+		log.Println("Error while parsing config : ", err)
 		os.Exit(1)
 	}
 	return config
@@ -35,14 +37,14 @@ func ReadEnv[Config any](filename string) Config {
 	viper.AddConfigPath("./configs")
 
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Println("Error while loading config :\n", err)
+		log.Println("Error while loading config : ", err)
 		os.Exit(1)
 	}
 
 	var config Config
 
 	if err := viper.UnmarshalExact(&config); err != nil {
-		fmt.Println("Error while parsing config :\n", err)
+		log.Println("Error while parsing config : ", err)
 		os.Exit(1)
 	}
 	return config

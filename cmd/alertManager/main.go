@@ -10,9 +10,17 @@ import (
 
 	"airport/internal/config"
 	"airport/internal/mqttTools"
+
+	"github.com/sirupsen/logrus"
 )
 
+var log = logrus.New()
+
 func main() {
+
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
 	var (
 		configFile = flag.String("config", "alert-manager-config.yaml", "Config file of the sensor")
 	)
@@ -20,11 +28,13 @@ func main() {
 
 	config := config.ReadConfig[ConfigStruct](*configFile)
 
+	log.Println("Using config : ", config)
+
 	brokerClient := mqttTools.NewBrokerClient(
 		config.Mqtt,
 	)
 
-	brokerClient.Subscribe("data/#", config.Mqtt.MqttQOS, func(topic string, payload []byte) {
+	brokerClient.Subscribe("data/#", func(topic string, payload []byte) {
 
 		alert := false
 
@@ -44,10 +54,10 @@ func main() {
 		}
 
 		if alert {
-			fmt.Printf("Alerte for topic %s, value : %s \n", topic, string(payload))
+			log.Printf("Alerte for topic %s, value : %s \n", topic, string(payload))
 			brokerClient.SendMessage(fmt.Sprintf("alert/%s", topic), string(payload), config.Mqtt.MqttQOS)
 		}
-	})
+	}, config.Mqtt.MqttQOS)
 
 	stopSignal := make(chan os.Signal, 1)
 	signal.Notify(stopSignal, os.Interrupt)

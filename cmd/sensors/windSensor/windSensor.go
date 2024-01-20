@@ -6,7 +6,6 @@ import (
 	"airport/internal/randomSensor"
 	"airport/internal/sensor"
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 )
