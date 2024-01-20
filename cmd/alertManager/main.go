@@ -1,15 +1,15 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"strconv"
-	"flag"
+	"strings"
 
-	"airport/internal/mqttTools"
 	"airport/internal/config"
+	"airport/internal/mqttTools"
 )
 
 func main() {
@@ -21,20 +21,16 @@ func main() {
 	config := config.ReadConfig[ConfigStruct](*configFile)
 
 	brokerClient := mqttTools.NewBrokerClient(
-		config.Mqtt.MqttId,
-		config.Mqtt.MqttUrl,
-		config.Mqtt.MqttPort,
-		config.Mqtt.MqttLogin,
-		config.Mqtt.MqttPassword,
+		config.Mqtt,
 	)
-	
-	brokerClient.Subscribe("data/#", func(topic string, payload []byte){
+
+	brokerClient.Subscribe("data/#", config.Mqtt.MqttQOS, func(topic string, payload []byte) {
 
 		alert := false
 
 		topicElements := strings.Split(topic, "/")
 		msgElements := strings.Split(string(payload), ";")
-		if (len(topicElements) >= 3 && len(msgElements) >= 2){
+		if len(topicElements) >= 3 && len(msgElements) >= 2 {
 			if value, err := strconv.ParseFloat(msgElements[1], 64); err == nil {
 				switch topicElements[2] {
 				case "Temp":
@@ -47,12 +43,12 @@ func main() {
 			}
 		}
 
-		if (alert){
+		if alert {
 			fmt.Printf("Alerte for topic %s, value : %s \n", topic, string(payload))
 			brokerClient.SendMessage(fmt.Sprintf("alert/%s", topic), string(payload), config.Mqtt.MqttQOS)
 		}
 	})
-	
+
 	stopSignal := make(chan os.Signal, 1)
 	signal.Notify(stopSignal, os.Interrupt)
 

@@ -11,9 +11,11 @@ import (
 )
 
 func main() {
-
+	configMQTTFile := flag.String("config", "file-recorder.yaml", "Config file of the file recorder")
 	outputDirectory := flag.String("outputdir", "./outputs", "Output directory where to store the files")
 	flag.Parse()
+
+	configMQTT := config.ReadConfig[mqttTools.MonoConfigMqtt](*configMQTTFile)
 
 	err := os.MkdirAll(*outputDirectory, os.ModePerm)
 	if err != nil {
@@ -21,14 +23,10 @@ func main() {
 		os.Exit(1)
 	}
 	brokerClient := mqttTools.NewBrokerClient(
-		"FileRecorder",
-		config.BROKER_URL,
-		config.BROKER_PORT,
-		config.BROKER_USERNAME,
-		config.BROKER_PASSWORD,
+		configMQTT.Mqtt,
 	)
 
-	brokerClient.Subscribe("data/#", func(topic string, message []byte) {
+	brokerClient.Subscribe("data/#", config.BROKER_QoS, func(topic string, message []byte) {
 		saveMessage(topic, message, *outputDirectory)
 	})
 

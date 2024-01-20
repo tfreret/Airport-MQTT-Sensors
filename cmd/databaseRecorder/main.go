@@ -31,14 +31,10 @@ func main() {
 	writeAPI := InfluxDBClient.WriteAPI(configInfluxDB.InfluxDBOrg, configInfluxDB.InfluxDBBucket)
 
 	brokerClient := mqttTools.NewBrokerClient(
-		configMQTT.Mqtt.MqttId,
-		configMQTT.Mqtt.MqttUrl,
-		configMQTT.Mqtt.MqttPort,
-		configMQTT.Mqtt.MqttLogin,
-		configMQTT.Mqtt.MqttPassword,
+		configMQTT.Mqtt,
 	)
 
-	brokerClient.Subscribe("data/#", func(topic string, message []byte) {
+	brokerClient.Subscribe("data/#", configMQTT.Mqtt.MqttQOS, func(topic string, message []byte) {
 		iata, measure, sensorId, err := mqttTools.ParseTopic(topic)
 		if err != nil {
 			fmt.Println("Couldn't extract IATA code; measure, and sensorId type from string : " + topic)

@@ -17,11 +17,7 @@ type Sensor struct {
 
 func NewSensor(concreteSensor SensorInterface, config ConfigSensor, generator randomSensor.NumberGenerator) Sensor {
 	client := mqttTools.NewBrokerClient(
-		config.Mqtt.MqttId,
-		config.Mqtt.MqttUrl,
-		config.Mqtt.MqttPort,
-		config.Mqtt.MqttLogin,
-		config.Mqtt.MqttPassword)
+		config.Mqtt)
 	return Sensor{
 		ConfigSensor:    config,
 		SensorInterface: concreteSensor,
