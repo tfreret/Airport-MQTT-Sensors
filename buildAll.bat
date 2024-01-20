@@ -20,7 +20,7 @@ echo Build process completed.
  start "" "./%build_dir%/sensors/pressureSensor.exe"
  start "" "./%build_dir%/sensors/tempSensor.exe"
  start "" "./%build_dir%/sensors/windSensor.exe"
- start "" "./%build_dir%/database-recorder.exe"
+ start "" "./%build_dir%/databaseRecorder.exe"
  start "" "./%build_dir%/api.exe"
 
 ::cleanup
