@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strings"
 	"sync"
@@ -33,12 +34,22 @@ type DataRecord struct {
 type Point struct {
 	Time     time.Time
 	Value    interface{}
-	sensorID string
+	SensorID string
 }
 
 type Sensor struct {
 	ID          string
 	MeasureType string
+}
+
+type AverageResponse struct {
+	Average float64 `json:"moyenne"`
+}
+
+type AverageMultipleResponse struct {
+	TempAverage float64 `json:"moyenne temp"`
+	PresAverage float64 `json:"moyenne pres"`
+	WindAverage float64 `json:"moyenne vent"`
 }
 
 var dbClient influxdb2.Client
@@ -52,8 +63,10 @@ func getDBClient() influxdb2.Client {
 }
 
 func influxRequest(airportID, sensorID, measureType string, from, to time.Time) (DataRecord, error) {
-	InfluxDBClient := influxdb2.NewClient(ConfigInflux.InfluxDBURL, ConfigInflux.InfluxDBToken)
-	defer InfluxDBClient.Close()
+	dbLock.Lock()
+	defer dbLock.Unlock()
+
+	InfluxDBClient := getDBClient()
 
 	queryAPI := InfluxDBClient.QueryAPI(ConfigInflux.InfluxDBOrg)
 
@@ -69,13 +82,15 @@ func influxRequest(airportID, sensorID, measureType string, from, to time.Time) 
 	} else if !to.IsZero() && !from.IsZero() {
 		builder.WriteString("|> range(start: " + from.Format(timeLayout) + ", stop: " + to.Format(timeLayout) + ") ")
 	} else {
-		builder.WriteString("|> range(start: -1h) ")
+		builder.WriteString("|> range(start: -1d) ")
 	}
 
 	builder.WriteString("|> filter(fn: (r) => r._measurement == \"sensor_data\" ")
 
 	appendFilter(&builder, "airport_id", airportID)
-	appendFilter(&builder, "sensor_id", sensorID)
+	if sensorID != "" {
+		appendFilter(&builder, "sensor_id", sensorID)
+	}
 	appendFilter(&builder, "sensor_category", measureType)
 
 	builder.WriteString(")")
@@ -102,7 +117,7 @@ func influxRequest(airportID, sensorID, measureType string, from, to time.Time) 
 		point := Point{
 			Time:     result.Record().Time(),
 			Value:    result.Record().Value(),
-			sensorID: sensorID,
+			SensorID: sensorID,
 		}
 		response.Points = append(response.Points, point)
 	}
@@ -205,13 +220,12 @@ func getAirports(w http.ResponseWriter, _ *http.Request) {
 	writeJson(&w, response)
 }
 
-// TODO changer les erreurs err.Error en internal server error pour sécurité
-func dataFromSensorCatAirportIDSensorIDHandler(w http.ResponseWriter, r *http.Request) {
+func getDataFromSensorTypeAirportIDSensorID(w http.ResponseWriter, r *http.Request) {
 	// On récupère les variables de chemin
 	vars := mux.Vars(r)
 	airportID := vars["airportID"]
 	sensorID := vars["sensorID"]
-	sensorCat := vars["sensorCat"]
+	sensorType := vars["sensorType"]
 
 	from := r.URL.Query().Get("from")
 	to := r.URL.Query().Get("to")
@@ -222,13 +236,91 @@ func dataFromSensorCatAirportIDSensorIDHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	// on appelle la BD
-	response, err := influxRequest(airportID, sensorID, sensorCat, parsedFrom, parsedTo)
+	response, err := influxRequest(airportID, sensorID, sensorType, parsedFrom, parsedTo)
 	if err != nil {
 		handleError(w, err, "Erreur lors de la requête à la base de données", http.StatusInternalServerError)
 		return
 	}
 
 	writeJson(&w, response)
+}
+
+func getAverageBySensorType(w http.ResponseWriter, r *http.Request) {
+	// On récupère les variables de chemin
+	vars := mux.Vars(r)
+	sensorType := vars["sensorType"]
+	airportID := vars["airportID"]
+
+	averageValue, err := calculateAverage(airportID, sensorType)
+	if err != nil {
+		handleError(w, err, "Erreur lors du calcul de la moyenne", http.StatusInternalServerError)
+	}
+
+	result := AverageResponse{Average: averageValue}
+
+	writeJson(&w, result)
+}
+
+func calculateAverage(airportID string, sensorType string) (float64, error) {
+	// on appelle la BD
+	response, err := influxRequest(airportID, "", sensorType, time.Time{}, time.Time{})
+	if err != nil {
+		return 0.0, err
+	}
+
+	// on calcule la moyenne
+	if len(response.Points) == 0 {
+		return 0.0, fmt.Errorf("no points available to calculate average")
+	}
+
+	sum := 0.0
+
+	for _, point := range response.Points {
+		// Assuming that the Value field is a float64
+		value, ok := point.Value.(float64)
+		if !ok {
+			return 0.0, fmt.Errorf("value is not a valid float64")
+		}
+
+		sum += value
+	}
+
+	// on arondit au centième supéreur
+	average := math.Ceil(sum/float64(len(response.Points))*100) / 100
+	return average, nil
+}
+
+func getAllAverages(w http.ResponseWriter, r *http.Request) {
+	// On récupère les variables de chemin
+	vars := mux.Vars(r)
+	airportID := vars["airportID"]
+
+	// on appelle la BD
+	tempAverage, err := calculateAverage(airportID, "Temp")
+	if err != nil {
+		handleError(w, err, "Erreur lors du calcul de la moyenne pour la température", http.StatusInternalServerError)
+		return
+	}
+
+	presAverage, err := calculateAverage(airportID, "Pres")
+	if err != nil {
+		handleError(w, err, "Erreur lors du calcul de la moyenne pour la pression", http.StatusInternalServerError)
+		return
+	}
+
+	windAverage, err := calculateAverage(airportID, "Wind")
+	if err != nil {
+		handleError(w, err, "Erreur lors du calcul de la moyenne pour la vitesse du vent", http.StatusInternalServerError)
+		return
+	}
+
+	result := AverageMultipleResponse{
+		TempAverage: tempAverage,
+		PresAverage: presAverage,
+		WindAverage: windAverage,
+	}
+
+	writeJson(&w, result)
 }
 
 func handleError(w http.ResponseWriter, err error, message string, status int) {
@@ -266,9 +358,11 @@ func main() {
 	ConfigInflux = config.ReadEnv[mqttTools.ConfigInfluxDB](*influxEnvFile)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/{sensorCat}/{airportID}/{sensorID}", dataFromSensorCatAirportIDSensorIDHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/data/{sensorType}/{airportID}/{sensorID}", getDataFromSensorTypeAirportIDSensorID).Methods("GET", "OPTIONS")
 	r.HandleFunc("/airports", getAirports).Methods("GET", "OPTIONS")
 	r.HandleFunc("/sensors/{airportID}", getSensors).Methods("GET", "OPTIONS")
+	r.HandleFunc("/average/{sensorType}/{airportID}", getAverageBySensorType).Methods("GET", "OPTIONS")
+	r.HandleFunc("/averages/{airportID}", getAllAverages).Methods("GET", "OPTIONS")
 	err := http.ListenAndServe(":8080", r)
 	if err != nil {
 		log.Println(err)
