@@ -7,6 +7,10 @@
 lancer le docker influxDB :
 docker compose --env-file  configs/influxdb.env up
 
+generer le swagger :
+- check si on bien le go/bin dans le $PATH (export PATH=$PATH:$GOPATH/bin)
+- swag init -g cmd/api/main.go à la racine
+
 Groupe members :
 - Tom Freret
 - Louis Painter

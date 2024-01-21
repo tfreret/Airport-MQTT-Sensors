@@ -53,7 +53,7 @@ func (sensor Sensor) StartSendingData() {
 		case <-ticker.C:
 			measurement, err := sensor.GetActualizeMeasure()
 			if err != nil {
-				fmt.Printf("Erreur lors de l'obtention de la mesure : %v", err)
+				log.Errorf("Erreur lors de l'obtention de la mesure : %v", err)
 				return
 			}
 			sensor.Send(measurement)

@@ -400,14 +400,14 @@ func calculateAverage(airportID string, sensorType string) (float64, error) {
 
 // @Summary Get the average values for temperature, pressure, and wind at a given airport.
 // @Description This endpoint calculates and returns the average values for temperature, pressure, and wind at a given airport.
-// @ID getAllAverages
+// @ID getAllAverage
 // @Tags Average
 // @Produce json
 // @Param airportID path string true "ID of the airport"
 // @Success 200 {object} AverageMultipleResponse
 // @Failure 500 {string} string
-// @Router /averages/{airportID} [get]
-func getAllAverages(w http.ResponseWriter, r *http.Request) {
+// @Router /average/{airportID} [get]
+func getAllAverage(w http.ResponseWriter, r *http.Request) {
 	// On récupère les variables de chemin
 	vars := mux.Vars(r)
 	airportID := vars["airportID"]
@@ -495,7 +495,7 @@ func main() {
 	r.HandleFunc("/airports", getAirports).Methods("GET", "OPTIONS")
 	r.HandleFunc("/sensors/{airportID}", getSensors).Methods("GET", "OPTIONS")
 	r.HandleFunc("/average/{airportID}/{sensorType}", getAverageBySensorType).Methods("GET", "OPTIONS")
-	r.HandleFunc("/averages/{airportID}", getAllAverages).Methods("GET", "OPTIONS")
+	r.HandleFunc("/average/{airportID}", getAllAverage).Methods("GET", "OPTIONS")
 
 	r.HandleFunc("/swaggerJson", func(w http.ResponseWriter, r *http.Request) {
 		serveSwaggerJSON(w, "./docs/swagger.json")

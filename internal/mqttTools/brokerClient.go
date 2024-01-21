@@ -14,6 +14,10 @@ type BrokerClient struct {
 }
 
 func NewBrokerClient(ConfigMqtt ConfigMqtt) BrokerClient {
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+
 	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprint(ConfigMqtt.MqttUrl, ":", ConfigMqtt.MqttPort))
 
 	opts.SetClientID(ConfigMqtt.MqttId)

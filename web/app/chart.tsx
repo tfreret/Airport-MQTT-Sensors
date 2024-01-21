@@ -24,7 +24,7 @@ export default function Chart({url}: Props) {
   const fetchData = async () => {
     try {
         const response = await axios.get(url);
-        const data = response.data['tab of points'] as PointAPI[];
+        const data = response.data['Points'] as PointAPI[];
         setChartData(
           data.map(it=> {return {date: it.Time, value: it.Value}})
         );

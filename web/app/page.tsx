@@ -38,6 +38,7 @@ export default function Home() {
   const [selectedAirport, setSelectedAirport] = useState("");
   const [selectedSensor, setSelectedSensor] = useState("");
   const [selectedMeans, setSelectedMeans] = useState<DataMeans>();
+  const [activeTab, setActiveTab] = useState(0);
 
   const fetchAirports = useMemo(async () => {
       try {
@@ -61,7 +62,7 @@ export default function Home() {
   const fetchAverage = useMemo(async () => {
     if (selectedAirport === "") return
     try {
-      const response = await axios.get(`http://localhost:8080/averages/${selectedAirport}`);
+      const response = await axios.get(`http://localhost:8080/average/${selectedAirport}`);
       console.log(response.data)
       setSelectedMeans(response.data);
     } catch (err) {
@@ -70,6 +71,7 @@ export default function Home() {
   }, [selectedAirport]);
 
   const handleSensorChange = useCallback((e: string) => {setSelectedSensor(e)}, []);
+  const handleTabChange = (index: number) => {setActiveTab(index);};
 
   return (
     <main className="p-12">
@@ -79,17 +81,22 @@ export default function Home() {
         <Title>Aéroport :</Title>
         <SearchSelect value={selectedAirport} onValueChange={setSelectedAirport} className="w-auto">
             {airports.map(it=><SearchSelectItem value={it} key={it}></SearchSelectItem>)}
-          </SearchSelect>
-          <Title>Capteur :</Title>
-        <SearchSelect value={selectedSensor} onValueChange={handleSensorChange} disabled={selectedAirport === ""} className="w-auto">
-          {sensors.map(it=><SearchSelectItem value={it.ID} key={it.ID}></SearchSelectItem>)}
         </SearchSelect>
+        {activeTab === 1 && (
+          <>
+            <Title>Capteur :</Title>
+            <SearchSelect value={selectedSensor} onValueChange={handleSensorChange} disabled={selectedAirport === ""} className="w-auto">
+            {sensors.map(it=><SearchSelectItem value={it.ID} key={it.ID}></SearchSelectItem>)}
+            </SearchSelect>
+          </>
+        )}
+
       </Flex>
       </Card>
       <TabGroup className="mt-6">
         <TabList>
-          <Tab>Aéroport</Tab>
-          <Tab>Capteur</Tab>
+          <Tab onClick={() => handleTabChange(0)}>Aéroport</Tab>
+          <Tab onClick={() => handleTabChange(1)}>Capteur</Tab>
         </TabList>
         <TabPanels>
           <TabPanel>
@@ -133,8 +140,17 @@ export default function Home() {
           </TabPanel>
           <TabPanel>
           <div className="mt-6">
-              { selectedAirport !== "" && selectedSensor !== "" &&
-              <Chart key={`${selectedAirport}/${selectedSensor}`} url={`http://localhost:8080/data/${sensors.find(it=>it.ID===selectedSensor)?.MeasureType}/${selectedAirport}/${selectedSensor}`} />
+              { selectedAirport !== "" && selectedSensor !== "" ? (
+                <Chart key={`${selectedAirport}/${selectedSensor}`} url={`http://localhost:8080/data/${selectedAirport}/${sensors.find(it=>it.ID===selectedSensor)?.MeasureType}/${selectedSensor}`} />
+              ) : (
+                <Grid numItemsMd={2} numItemsLg={3} className="gap-6 mt-6">
+                  <Card>
+                    <Flex justifyContent="center" alignItems="center" flexDirection="col" className="gap-5" >
+                      <Title>Aucun aéroport/capteur sélectionné</Title>
+                    </Flex>
+                  </Card>
+                </Grid>
+              )
               }
             </div>
           </TabPanel>

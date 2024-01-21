@@ -54,7 +54,7 @@ func main() {
 		}
 
 		if alert {
-			log.Printf("Alerte for topic %s, value : %s \n", topic, string(payload))
+			log.Warnf("Alerte for topic %s, value : %s", topic, string(payload))
 			brokerClient.SendMessage(fmt.Sprintf("alert/%s", topic), string(payload), config.Mqtt.MqttQOS)
 		}
 	}, config.Mqtt.MqttQOS)
