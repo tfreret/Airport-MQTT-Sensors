@@ -28,6 +28,7 @@ var log = logrus.New()
 
 var ConfigInflux mqttTools.ConfigInfluxDB
 
+// DataRecord
 // @Summary Represents a data record
 // @Description Represents a data record with information about time, measurement type, airport ID, and points.
 // @ID dataRecord
@@ -37,21 +38,22 @@ var ConfigInflux mqttTools.ConfigInfluxDB
 type DataRecord struct {
 	// beginning time
 	// Example: "2022-01-01T00:00:00Z"
-	From time.Time `json:"beginning time"`
+	From time.Time
 	// ending time
 	// Example: "2022-01-02T00:00:00Z"
-	To time.Time `json:"ending time"`
+	To time.Time
 	// type of measurement
 	// Example: "temperature"
-	MeasureType string `json:"type"`
+	MeasureType string
 	// ID of the airport
 	// Example: "JFK"
-	AirportId string `json:"id"`
+	AirportId string
 	// array of points
 	// Example: [{"Time": "2022-01-01T12:00:00Z", "Value": 25.5, "SensorID": "123"}]
-	Points []Point `json:"tab of points"`
+	Points []Point
 }
 
+// Point
 // @Summary Represents a data point
 // @Description Represents a data point with time, value, and sensor ID.
 // @ID point
@@ -70,6 +72,7 @@ type Point struct {
 	SensorID string
 }
 
+// Sensor
 // @Summary Represents a sensor
 // @Description Represents a sensor with ID and measurement type.
 // @ID sensor
@@ -85,6 +88,7 @@ type Sensor struct {
 	MeasureType string
 }
 
+// AverageResponse
 // @Summary Represents the response containing average value
 // @Description Represents the response containing the average value for a sensor.
 // @ID averageResponse
@@ -94,9 +98,10 @@ type Sensor struct {
 type AverageResponse struct {
 	// Average value
 	// Example: 25.5
-	Average float64 `json:"moyenne"`
+	Average float64
 }
 
+// AverageMultipleResponse
 // @Summary Represents the response containing multiple averages
 // @Description Represents the response containing average values for temperature, pressure, and wind.
 // @ID averageMultipleResponse
@@ -106,13 +111,13 @@ type AverageResponse struct {
 type AverageMultipleResponse struct {
 	// Average value for temperature
 	// Example: 25.5
-	TempAverage float64 `json:"TempAverage"`
+	TempAverage float64
 	// Average value for pressure
 	// Example: 1013.2
-	PresAverage float64 `json:"PresAverage"`
+	PresAverage float64
 	// Average value for wind speed
 	// Example: 10.2
-	WindAverage float64 `json:"WindAverage"`
+	WindAverage float64
 }
 
 var dbClient influxdb2.Client
@@ -312,7 +317,7 @@ func getAirports(w http.ResponseWriter, _ *http.Request) {
 // @Param to query string false "End date (format: 2006-01-02T15:04:05Z)"
 // @Success 200 {object} DataRecord
 // @Failure 500 {string} string
-// @Router /data/{sensorType}/{airportID}/{sensorID} [get]
+// @Router /data/{airportID}/{sensorType}/{sensorID} [get]
 func getDataFromSensorTypeAirportIDSensorID(w http.ResponseWriter, r *http.Request) {
 	// On récupère les variables de chemin
 	vars := mux.Vars(r)
@@ -347,7 +352,7 @@ func getDataFromSensorTypeAirportIDSensorID(w http.ResponseWriter, r *http.Reque
 // @Param airportID path string true "ID of the airport"
 // @Success 200 {object} AverageResponse
 // @Failure 500 {string} string
-// @Router /average/{sensorType}/{airportID} [get]
+// @Router /average/{airportID}/{sensorType} [get]
 func getAverageBySensorType(w http.ResponseWriter, r *http.Request) {
 	// On récupère les variables de chemin
 	vars := mux.Vars(r)
@@ -486,14 +491,14 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/data/{sensorType}/{airportID}/{sensorID}", getDataFromSensorTypeAirportIDSensorID).Methods("GET", "OPTIONS")
+	r.HandleFunc("/data/{airportID}/{sensorType}/{sensorID}", getDataFromSensorTypeAirportIDSensorID).Methods("GET", "OPTIONS")
 	r.HandleFunc("/airports", getAirports).Methods("GET", "OPTIONS")
 	r.HandleFunc("/sensors/{airportID}", getSensors).Methods("GET", "OPTIONS")
-	r.HandleFunc("/average/{sensorType}/{airportID}", getAverageBySensorType).Methods("GET", "OPTIONS")
+	r.HandleFunc("/average/{airportID}/{sensorType}", getAverageBySensorType).Methods("GET", "OPTIONS")
 	r.HandleFunc("/averages/{airportID}", getAllAverages).Methods("GET", "OPTIONS")
 
 	r.HandleFunc("/swaggerJson", func(w http.ResponseWriter, r *http.Request) {
-		serveSwaggerJSON(w, r, "./docs/swagger.json")
+		serveSwaggerJSON(w, "./docs/swagger.json")
 	}).Methods("GET")
 
 	r.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
@@ -507,7 +512,7 @@ func main() {
 	}
 }
 
-func serveSwaggerJSON(w http.ResponseWriter, r *http.Request, swaggerJSONPath string) {
+func serveSwaggerJSON(w http.ResponseWriter, swaggerJSONPath string) {
 	file, err := os.Open(swaggerJSONPath)
 	if err != nil {
 		log.Errorf("Error opening Swagger JSON file: %v", err)
