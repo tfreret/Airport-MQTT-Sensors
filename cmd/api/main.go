@@ -47,9 +47,9 @@ type AverageResponse struct {
 }
 
 type AverageMultipleResponse struct {
-	TempAverage float64 `json:"moyenne temp"`
-	PresAverage float64 `json:"moyenne pres"`
-	WindAverage float64 `json:"moyenne vent"`
+	TempAverage float64 `json:"TempAverage"`
+	PresAverage float64 `json:"PresAverage"`
+	WindAverage float64 `json:"WindAverage"`
 }
 
 var dbClient influxdb2.Client

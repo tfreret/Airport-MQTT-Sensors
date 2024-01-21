@@ -27,9 +27,9 @@ interface Sensor {
 }
 
 interface DataMeans {
-  TempMean: string,
-  PresMean: string,
-  WindMean: string,
+  TempAverage: string,
+  PresAverage: string,
+  WindAverage: string,
 }
 
 export default function Home() {
@@ -61,7 +61,8 @@ export default function Home() {
   const fetchAverage = useMemo(async () => {
     if (selectedAirport === "") return
     try {
-      const response = await axios.get(`http://localhost:8080/TODO/${selectedAirport}`);
+      const response = await axios.get(`http://localhost:8080/averages/${selectedAirport}`);
+      console.log(response.data)
       setSelectedMeans(response.data);
     } catch (err) {
       console.log(err);
@@ -102,20 +103,20 @@ export default function Home() {
               </Card>
               <Card>
                 <Flex justifyContent="center" alignItems="center" flexDirection="col" className="gap-5" >
-                <Title>Température moyenne du jour :</Title>
-                <Metric>{selectedMeans?.TempMean + " °C"}</Metric>
+                <Title>Température moyenne (aujourd'hui) :</Title>
+                <Metric>{selectedMeans?.TempAverage + " °C"}</Metric>
                 </Flex>
               </Card>
               <Card>
               <Flex justifyContent="center" alignItems="center" flexDirection="col" className="gap-5" >
-                <Title>Vitesse du vent moyenne du jour :</Title>
-                <Metric>{selectedMeans?.WindMean + " km/h"}</Metric>
+                <Title>Vitesse moyenne du vent (aujourd'hui) :</Title>
+                <Metric>{selectedMeans?.WindAverage + " km/h"}</Metric>
                 </Flex>
               </Card>
               <Card>
                 <Flex justifyContent="center" alignItems="center" flexDirection="col" className="gap-5" >
-                <Title>Pression atmosphérique moyenne du jour :</Title>
-                <Metric>{selectedMeans?.PresMean + " hPa"}</Metric>
+                <Title>Pression atmosphérique moyenne (aujourd'hui) :</Title>
+                <Metric>{selectedMeans?.PresAverage + " hPa"}</Metric>
                 </Flex>
               </Card>
             </Grid>
@@ -133,7 +134,7 @@ export default function Home() {
           <TabPanel>
           <div className="mt-6">
               { selectedAirport !== "" && selectedSensor !== "" &&
-              <Chart key={`${selectedAirport}/${selectedSensor}`} url={`http://localhost:8080/${sensors.find(it=>it.ID===selectedSensor)?.MeasureType}/${selectedAirport}/${selectedSensor}`} />
+              <Chart key={`${selectedAirport}/${selectedSensor}`} url={`http://localhost:8080/data/${sensors.find(it=>it.ID===selectedSensor)?.MeasureType}/${selectedAirport}/${selectedSensor}`} />
               }
             </div>
           </TabPanel>
