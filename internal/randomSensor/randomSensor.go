@@ -19,7 +19,7 @@ func NewNumberGenerator(initialValue, lowerLimit, upperLimit float64) *NumberGen
 }
 
 func (ng *NumberGenerator) GenerateRandomNumber() float64 {
-	offset := rand.Intn(3) - 1
+	offset := rand.Intn(2) - 1
 	newNumber := ng.lastNumber + float64(offset) + rand.Float64()
 	if newNumber < ng.lowerLimit {
 		newNumber = ng.lowerLimit

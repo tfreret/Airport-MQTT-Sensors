@@ -6,7 +6,6 @@ import (
 	"airport/internal/randomSensor"
 	"airport/internal/sensor"
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 )
@@ -16,7 +15,7 @@ type PressureSensor struct {
 }
 
 func (pSensor *PressureSensor) GetActualizeMeasure() (sensor.Measurement, error) {
-	if config.USE_API {
+	if pSensor.ConfigSensor.Api.Use {
 		apiResponse, err := apiClient.GetApiResponse(config.CHECKWX_URL+pSensor.Params.Airport+"/decoded", pSensor.Api.Key)
 		if err != nil {
 			log.Printf("Erreur lors de l'obtention de la réponse de l'API : %v", err)

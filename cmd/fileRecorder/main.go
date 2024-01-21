@@ -8,29 +8,38 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
+
+var log = logrus.New()
 
 func main() {
 
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+
+	configMQTTFile := flag.String("config", "file-recorder.yaml", "Config file of the file recorder")
 	outputDirectory := flag.String("outputdir", "./outputs", "Output directory where to store the files")
 	flag.Parse()
 
+	configMQTT := config.ReadConfig[mqttTools.MonoConfigMqtt](*configMQTTFile)
+
+	log.Println("Using config : ", configMQTT, outputDirectory)
+
 	err := os.MkdirAll(*outputDirectory, os.ModePerm)
 	if err != nil {
-		fmt.Printf("Couldn't find or create directory '%s' : %s", outputDirectory, err)
+		log.Errorf("Couldn't find or create directory '%s' : %s", *outputDirectory, err)
 		os.Exit(1)
 	}
 	brokerClient := mqttTools.NewBrokerClient(
-		"FileRecorder",
-		config.BROKER_URL,
-		config.BROKER_PORT,
-		config.BROKER_USERNAME,
-		config.BROKER_PASSWORD,
+		configMQTT.Mqtt,
 	)
 
 	brokerClient.Subscribe("data/#", func(topic string, message []byte) {
 		saveMessage(topic, message, *outputDirectory)
-	})
+	}, configMQTT.Mqtt.MqttQOS)
 
 	stopSignal := make(chan os.Signal, 1)
 	signal.Notify(stopSignal, os.Interrupt)
@@ -39,17 +48,17 @@ func main() {
 }
 
 func saveMessage(topic string, payload []byte, outputDir string) {
-	fmt.Printf("Received message on topic : '%s'\n%s", topic, string(payload))
+	log.Printf("Received message on topic : '%s' value : '%s'", topic, string(payload))
 
 	iata, measure, _, err := mqttTools.ParseTopic(topic)
 	if err != nil {
-		fmt.Println("Couldn't extract IATA code; measure, and sensorId type from string : " + topic)
+		log.Errorf("Couldn't extract IATA code; measure, and sensorId type from string : " + topic)
 		return
 	}
 
 	value, time, err := mqttTools.ParseData(string(payload))
 	if err != nil {
-		fmt.Println("Couldn't extract value and time from payload : " + string(payload))
+		log.Errorf("Couldn't extract value and time from payload : " + string(payload))
 	}
 	save(iata, measure, value, time, outputDir)
 }
@@ -60,20 +69,20 @@ func save(iata, measure, value, time, outputDir string) {
 	f, err := os.OpenFile(file,
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Printf("Couldn't open file '%s' : %s\n", file, err)
+		log.Errorf("Couldn't open file '%s' : %s\n", file, err)
 		return
 	}
 
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
-			fmt.Printf("Couldn't close properly file '%s' : %s\n", file, err)
+			log.Errorf("Couldn't close properly file '%s' : %s\n", file, err)
 		}
 	}(f)
 
 	line := fmt.Sprintf("%s;%s;%s\n", time, measure, value)
 	if _, err := f.WriteString(line); err != nil {
-		fmt.Printf("Couldn't log data to file  '%s' : %s\n", file, err)
+		log.Errorf("Couldn't log data to file  '%s' : %s\n", file, err)
 		return
 	}
 }

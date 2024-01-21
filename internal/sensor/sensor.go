@@ -5,8 +5,13 @@ import (
 	"airport/internal/randomSensor"
 	"fmt"
 	"math"
+	"strconv"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
+
+var log = logrus.New()
 
 type Sensor struct {
 	SensorInterface
@@ -16,12 +21,11 @@ type Sensor struct {
 }
 
 func NewSensor(concreteSensor SensorInterface, config ConfigSensor, generator randomSensor.NumberGenerator) Sensor {
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
 	client := mqttTools.NewBrokerClient(
-		config.Mqtt.MqttId,
-		config.Mqtt.MqttUrl,
-		config.Mqtt.MqttPort,
-		config.Mqtt.MqttLogin,
-		config.Mqtt.MqttPassword)
+		config.Mqtt)
 	return Sensor{
 		ConfigSensor:    config,
 		SensorInterface: concreteSensor,
@@ -31,12 +35,13 @@ func NewSensor(concreteSensor SensorInterface, config ConfigSensor, generator ra
 }
 
 func (sensor Sensor) Send(mesure Measurement) {
+
 	sensor.brokerClient.SendMessage(
 		fmt.Sprintf("data/%s/%s/%s", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId),
-		fmt.Sprintf("%s;%f", mesure.Timestamp, math.Round(mesure.Value*10)/10),
+		fmt.Sprintf("%s;%s", mesure.Timestamp, strconv.FormatFloat(math.Round(mesure.Value*10/10), 'f', -2, 64)),
 		sensor.Mqtt.MqttQOS,
 	)
-	fmt.Printf("data/%s/%s/%s\n value:%f\n time:%s\n", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId, math.Round(mesure.Value*10)/10, mesure.Timestamp)
+	log.Printf("Send message on topic : '/data/%s/%s/%s' value: '%s:%s'", sensor.Params.Airport, mesure.TypeMesure, sensor.Mqtt.MqttId, mesure.Timestamp, strconv.FormatFloat(math.Round(mesure.Value*10/10), 'f', -2, 64))
 }
 
 func (sensor Sensor) StartSendingData() {

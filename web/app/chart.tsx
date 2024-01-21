@@ -28,13 +28,13 @@ export default function Chart({url}: Props) {
         setChartData(
           data.map(it=> {return {date: it.Time, value: it.Value}})
         );
-  
+
     } catch (error) {
       setChartData([]);
       console.error('Erreur lors de la récupération des données:', error);
     }
   };
-  
+
   useEffect(() => {
     fetchData();
     const intervalId = setInterval(() => {

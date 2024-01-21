@@ -26,11 +26,18 @@ interface Sensor {
   MeasureType: string
 }
 
+interface DataMeans {
+  TempAverage: string,
+  PresAverage: string,
+  WindAverage: string,
+}
+
 export default function Home() {
   const [airports, setAirports] = useState<string[]>([]);
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [selectedAirport, setSelectedAirport] = useState("");
   const [selectedSensor, setSelectedSensor] = useState("");
+  const [selectedMeans, setSelectedMeans] = useState<DataMeans>();
 
   const fetchAirports = useMemo(async () => {
       try {
@@ -46,6 +53,17 @@ export default function Home() {
     try {
       const response = await axios.get(`http://localhost:8080/sensors/${selectedAirport}`);
       setSensors(response.data);
+    } catch (err) {
+      console.log(err);
+    }
+  }, [selectedAirport]);
+
+  const fetchAverage = useMemo(async () => {
+    if (selectedAirport === "") return
+    try {
+      const response = await axios.get(`http://localhost:8080/averages/${selectedAirport}`);
+      console.log(response.data)
+      setSelectedMeans(response.data);
     } catch (err) {
       console.log(err);
     }
@@ -75,29 +93,48 @@ export default function Home() {
         </TabList>
         <TabPanels>
           <TabPanel>
+            {selectedAirport ? (
             <Grid numItemsMd={2} numItemsLg={3} className="gap-6 mt-6">
               <Card>
                 <Flex justifyContent="center" alignItems="center" flexDirection="col" className="gap-5" >
                 <Title>Nombre de capteurs :</Title>
                 <Metric>{sensors.length}</Metric>
                 </Flex>
-                
               </Card>
               <Card>
-                {/* Placeholder to set height */}
-                <div className="h-28" />
+                <Flex justifyContent="center" alignItems="center" flexDirection="col" className="gap-5" >
+                <Title>Température moyenne (aujourd'hui) :</Title>
+                <Metric>{selectedMeans?.TempAverage + " °C"}</Metric>
+                </Flex>
               </Card>
               <Card>
-                {/* Placeholder to set height */}
-                <div className="h-28" />
+              <Flex justifyContent="center" alignItems="center" flexDirection="col" className="gap-5" >
+                <Title>Vitesse moyenne du vent (aujourd'hui) :</Title>
+                <Metric>{selectedMeans?.WindAverage + " km/h"}</Metric>
+                </Flex>
+              </Card>
+              <Card>
+                <Flex justifyContent="center" alignItems="center" flexDirection="col" className="gap-5" >
+                <Title>Pression atmosphérique moyenne (aujourd'hui) :</Title>
+                <Metric>{selectedMeans?.PresAverage + " hPa"}</Metric>
+                </Flex>
               </Card>
             </Grid>
-      
+            ) : (
+              <Grid numItemsMd={2} numItemsLg={3} className="gap-6 mt-6">
+              <Card>
+                <Flex justifyContent="center" alignItems="center" flexDirection="col" className="gap-5" >
+                <Title>Aucun aéroport sélectionné</Title>
+                </Flex>
+              </Card>
+              </Grid>
+            )}
+
           </TabPanel>
           <TabPanel>
           <div className="mt-6">
               { selectedAirport !== "" && selectedSensor !== "" &&
-              <Chart key={`${selectedAirport}/${selectedSensor}`} url={`http://localhost:8080/${sensors.find(it=>it.ID===selectedSensor)?.MeasureType}/${selectedAirport}/${selectedSensor}`} />
+              <Chart key={`${selectedAirport}/${selectedSensor}`} url={`http://localhost:8080/data/${sensors.find(it=>it.ID===selectedSensor)?.MeasureType}/${selectedAirport}/${selectedSensor}`} />
               }
             </div>
           </TabPanel>

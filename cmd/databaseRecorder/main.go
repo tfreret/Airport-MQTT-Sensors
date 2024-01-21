@@ -4,16 +4,23 @@ import (
 	"airport/internal/config"
 	"airport/internal/mqttTools"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/sirupsen/logrus"
 )
 
+var log = logrus.New()
+
 func main() {
+
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+
 	var (
 		influxEnvFile = flag.String("influx", "influxdb.env", ".env file for influx db")
 	)
@@ -25,29 +32,25 @@ func main() {
 	configMQTT := config.ReadConfig[mqttTools.MonoConfigMqtt](*configMQTTFile)
 	configInfluxDB := config.ReadEnv[mqttTools.ConfigInfluxDB](*influxEnvFile)
 
-	fmt.Println("Using config :", configMQTT, configInfluxDB)
+	log.Println("Using config : ", configMQTT, configInfluxDB)
 
 	InfluxDBClient := influxdb2.NewClient(configInfluxDB.InfluxDBURL, configInfluxDB.InfluxDBToken)
 	writeAPI := InfluxDBClient.WriteAPI(configInfluxDB.InfluxDBOrg, configInfluxDB.InfluxDBBucket)
 
 	brokerClient := mqttTools.NewBrokerClient(
-		configMQTT.Mqtt.MqttId,
-		configMQTT.Mqtt.MqttUrl,
-		configMQTT.Mqtt.MqttPort,
-		configMQTT.Mqtt.MqttLogin,
-		configMQTT.Mqtt.MqttPassword,
+		configMQTT.Mqtt,
 	)
 
 	brokerClient.Subscribe("data/#", func(topic string, message []byte) {
 		iata, measure, sensorId, err := mqttTools.ParseTopic(topic)
 		if err != nil {
-			fmt.Println("Couldn't extract IATA code; measure, and sensorId type from string : " + topic)
+			log.Errorf("Couldn't extract IATA code; measure, and sensorId type from string : " + topic)
 			return
 		}
 
 		value, date, err := mqttTools.ParseData(string(message))
 		if err != nil {
-			fmt.Println("Couldn't extract value and time from payload : " + string(message))
+			log.Errorf("Couldn't extract value and time from payload : " + string(message))
 		}
 
 		valuefloat, _ := strconv.ParseFloat(value, 64)
@@ -63,10 +66,10 @@ func main() {
 		}
 		point := influxdb2.NewPoint("sensor_data", tags, fields, timestamp)
 
-		fmt.Println("Insert in inlfuxDB : ", tags, valuefloat, timestamp)
+		log.Println("Insert in inlfuxDB :", tags, valuefloat, timestamp)
 
 		writeAPI.WritePoint(point)
-	})
+	}, configMQTT.Mqtt.MqttQOS)
 
 	stopSignal := make(chan os.Signal, 1)
 	signal.Notify(stopSignal, os.Interrupt)
