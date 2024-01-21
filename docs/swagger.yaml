@@ -4,17 +4,17 @@ definitions:
     description: Represents the response containing average values for temperature,
       pressure, and wind.
     properties:
-      PresAverage:
+      presAverage:
         description: |-
           Average value for pressure
           Example: 1013.2
         type: number
-      TempAverage:
+      tempAverage:
         description: |-
           Average value for temperature
           Example: 25.5
         type: number
-      WindAverage:
+      windAverage:
         description: |-
           Average value for wind speed
           Example: 10.2
@@ -23,7 +23,7 @@ definitions:
   main.AverageResponse:
     description: Represents the response containing the average value for a sensor.
     properties:
-      moyenne:
+      average:
         description: |-
           Average value
           Example: 25.5
@@ -33,32 +33,32 @@ definitions:
     description: Represents a data record with information about time, measurement
       type, airport ID, and points.
     properties:
-      beginning time:
-        description: |-
-          beginning time
-          Example: "2022-01-01T00:00:00Z"
-        type: string
-      ending time:
-        description: |-
-          ending time
-          Example: "2022-01-02T00:00:00Z"
-        type: string
-      id:
+      airportId:
         description: |-
           ID of the airport
           Example: "JFK"
         type: string
-      tab of points:
+      from:
+        description: |-
+          beginning time
+          Example: "2022-01-01T00:00:00Z"
+        type: string
+      measureType:
+        description: |-
+          type of measurement
+          Example: "temperature"
+        type: string
+      points:
         description: |-
           array of points
           Example: [{"Time": "2022-01-01T12:00:00Z", "Value": 25.5, "SensorID": "123"}]
         items:
           $ref: '#/definitions/main.Point'
         type: array
-      type:
+      to:
         description: |-
-          type of measurement
-          Example: "temperature"
+          ending time
+          Example: "2022-01-02T00:00:00Z"
         type: string
     type: object
   main.Point:
@@ -123,7 +123,33 @@ paths:
       summary: Get a list of airports.
       tags:
       - Airport
-  /average/{sensorType}/{airportID}:
+  /average/{airportID}:
+    get:
+      description: This endpoint calculates and returns the average values for temperature,
+        pressure, and wind at a given airport.
+      operationId: getAllAverage
+      parameters:
+      - description: ID of the airport
+        in: path
+        name: airportID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.AverageMultipleResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get the average values for temperature, pressure, and wind at a given
+        airport.
+      tags:
+      - Average
+  /average/{airportID}/{sensorType}:
     get:
       description: This endpoint calculates and returns the average value for a specific
         sensor type at a given airport.
@@ -153,33 +179,7 @@ paths:
       summary: Get the average value for a specific sensor type at a given airport.
       tags:
       - Average
-  /averages/{airportID}:
-    get:
-      description: This endpoint calculates and returns the average values for temperature,
-        pressure, and wind at a given airport.
-      operationId: getAllAverages
-      parameters:
-      - description: ID of the airport
-        in: path
-        name: airportID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.AverageMultipleResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            type: string
-      summary: Get the average values for temperature, pressure, and wind at a given
-        airport.
-      tags:
-      - Average
-  /data/{sensorType}/{airportID}/{sensorID}:
+  /data/{airportID}/{sensorType}/{sensorID}:
     get:
       description: This endpoint retrieves data from a specific sensor based on the
         sensor type and airport ID.

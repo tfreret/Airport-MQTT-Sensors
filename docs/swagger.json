@@ -43,7 +43,43 @@
                 }
             }
         },
-        "/average/{sensorType}/{airportID}": {
+        "/average/{airportID}": {
+            "get": {
+                "description": "This endpoint calculates and returns the average values for temperature, pressure, and wind at a given airport.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Average"
+                ],
+                "summary": "Get the average values for temperature, pressure, and wind at a given airport.",
+                "operationId": "getAllAverage",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of the airport",
+                        "name": "airportID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.AverageMultipleResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/average/{airportID}/{sensorType}": {
             "get": {
                 "description": "This endpoint calculates and returns the average value for a specific sensor type at a given airport.",
                 "produces": [
@@ -86,43 +122,7 @@
                 }
             }
         },
-        "/averages/{airportID}": {
-            "get": {
-                "description": "This endpoint calculates and returns the average values for temperature, pressure, and wind at a given airport.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Average"
-                ],
-                "summary": "Get the average values for temperature, pressure, and wind at a given airport.",
-                "operationId": "getAllAverages",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID of the airport",
-                        "name": "airportID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.AverageMultipleResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/data/{sensorType}/{airportID}/{sensorID}": {
+        "/data/{airportID}/{sensorType}/{sensorID}": {
             "get": {
                 "description": "This endpoint retrieves data from a specific sensor based on the sensor type and airport ID.",
                 "produces": [
@@ -229,15 +229,15 @@
             "description": "Represents the response containing average values for temperature, pressure, and wind.",
             "type": "object",
             "properties": {
-                "PresAverage": {
+                "presAverage": {
                     "description": "Average value for pressure\nExample: 1013.2",
                     "type": "number"
                 },
-                "TempAverage": {
+                "tempAverage": {
                     "description": "Average value for temperature\nExample: 25.5",
                     "type": "number"
                 },
-                "WindAverage": {
+                "windAverage": {
                     "description": "Average value for wind speed\nExample: 10.2",
                     "type": "number"
                 }
@@ -247,7 +247,7 @@
             "description": "Represents the response containing the average value for a sensor.",
             "type": "object",
             "properties": {
-                "moyenne": {
+                "average": {
                     "description": "Average value\nExample: 25.5",
                     "type": "number"
                 }
@@ -257,27 +257,27 @@
             "description": "Represents a data record with information about time, measurement type, airport ID, and points.",
             "type": "object",
             "properties": {
-                "beginning time": {
-                    "description": "beginning time\nExample: \"2022-01-01T00:00:00Z\"",
-                    "type": "string"
-                },
-                "ending time": {
-                    "description": "ending time\nExample: \"2022-01-02T00:00:00Z\"",
-                    "type": "string"
-                },
-                "id": {
+                "airportId": {
                     "description": "ID of the airport\nExample: \"JFK\"",
                     "type": "string"
                 },
-                "tab of points": {
+                "from": {
+                    "description": "beginning time\nExample: \"2022-01-01T00:00:00Z\"",
+                    "type": "string"
+                },
+                "measureType": {
+                    "description": "type of measurement\nExample: \"temperature\"",
+                    "type": "string"
+                },
+                "points": {
                     "description": "array of points\nExample: [{\"Time\": \"2022-01-01T12:00:00Z\", \"Value\": 25.5, \"SensorID\": \"123\"}]",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/main.Point"
                     }
                 },
-                "type": {
-                    "description": "type of measurement\nExample: \"temperature\"",
+                "to": {
+                    "description": "ending time\nExample: \"2022-01-02T00:00:00Z\"",
                     "type": "string"
                 }
             }
