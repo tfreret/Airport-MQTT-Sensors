@@ -1,0 +1,251 @@
+basePath: /
+definitions:
+  main.AverageMultipleResponse:
+    description: Represents the response containing average values for temperature,
+      pressure, and wind.
+    properties:
+      PresAverage:
+        description: |-
+          Average value for pressure
+          Example: 1013.2
+        type: number
+      TempAverage:
+        description: |-
+          Average value for temperature
+          Example: 25.5
+        type: number
+      WindAverage:
+        description: |-
+          Average value for wind speed
+          Example: 10.2
+        type: number
+    type: object
+  main.AverageResponse:
+    description: Represents the response containing the average value for a sensor.
+    properties:
+      moyenne:
+        description: |-
+          Average value
+          Example: 25.5
+        type: number
+    type: object
+  main.DataRecord:
+    description: Represents a data record with information about time, measurement
+      type, airport ID, and points.
+    properties:
+      beginning time:
+        description: |-
+          beginning time
+          Example: "2022-01-01T00:00:00Z"
+        type: string
+      ending time:
+        description: |-
+          ending time
+          Example: "2022-01-02T00:00:00Z"
+        type: string
+      id:
+        description: |-
+          ID of the airport
+          Example: "JFK"
+        type: string
+      tab of points:
+        description: |-
+          array of points
+          Example: [{"Time": "2022-01-01T12:00:00Z", "Value": 25.5, "SensorID": "123"}]
+        items:
+          $ref: '#/definitions/main.Point'
+        type: array
+      type:
+        description: |-
+          type of measurement
+          Example: "temperature"
+        type: string
+    type: object
+  main.Point:
+    description: Represents a data point with time, value, and sensor ID.
+    properties:
+      sensorID:
+        description: |-
+          Sensor ID
+          Example: "123"
+        type: string
+      time:
+        description: |-
+          Time of the data point
+          Example: "2022-01-01T12:00:00Z"
+        type: string
+      value:
+        description: |-
+          Value of the data point
+          Example: 25.5
+    type: object
+  main.Sensor:
+    description: Represents a sensor with ID and measurement type.
+    properties:
+      id:
+        description: |-
+          Sensor ID
+          Example: "123"
+        type: string
+      measureType:
+        description: |-
+          Sensor category or measurement type
+          Example: "temperature"
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This API provides endpoints to retrieve data from airport sensors.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: Airport Data API
+  version: "1.0"
+paths:
+  /airports:
+    get:
+      description: This endpoint retrieves a list of airports.
+      operationId: getAirports
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get a list of airports.
+      tags:
+      - Airport
+  /average/{sensorType}/{airportID}:
+    get:
+      description: This endpoint calculates and returns the average value for a specific
+        sensor type at a given airport.
+      operationId: getAverageBySensorType
+      parameters:
+      - description: Type of sensor
+        in: path
+        name: sensorType
+        required: true
+        type: string
+      - description: ID of the airport
+        in: path
+        name: airportID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.AverageResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get the average value for a specific sensor type at a given airport.
+      tags:
+      - Average
+  /averages/{airportID}:
+    get:
+      description: This endpoint calculates and returns the average values for temperature,
+        pressure, and wind at a given airport.
+      operationId: getAllAverages
+      parameters:
+      - description: ID of the airport
+        in: path
+        name: airportID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.AverageMultipleResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get the average values for temperature, pressure, and wind at a given
+        airport.
+      tags:
+      - Average
+  /data/{sensorType}/{airportID}/{sensorID}:
+    get:
+      description: This endpoint retrieves data from a specific sensor based on the
+        sensor type and airport ID.
+      operationId: getDataFromSensorTypeAirportIDSensorID
+      parameters:
+      - description: Type of sensor
+        in: path
+        name: sensorType
+        required: true
+        type: string
+      - description: ID of the airport
+        in: path
+        name: airportID
+        required: true
+        type: string
+      - description: ID of the sensor
+        in: path
+        name: sensorID
+        required: true
+        type: string
+      - description: 'Start date (format: 2006-01-02T15:04:05Z)'
+        in: query
+        name: from
+        type: string
+      - description: 'End date (format: 2006-01-02T15:04:05Z)'
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.DataRecord'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get data from a specific sensor for a given sensor type and airport.
+      tags:
+      - Data
+  /sensors/{airportID}:
+    get:
+      description: This endpoint retrieves a list of sensors for a specific airport.
+      operationId: getSensors
+      parameters:
+      - description: ID of the airport
+        in: path
+        name: airportID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.Sensor'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get a list of sensors for a specific airport.
+      tags:
+      - Sensor
+swagger: "2.0"

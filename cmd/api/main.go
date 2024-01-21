@@ -8,47 +8,110 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
+	"io"
 	"math"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/mrz1836/go-sanitize"
+	"github.com/sirupsen/logrus"
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/gorilla/mux"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
+var log = logrus.New()
+
 var ConfigInflux mqttTools.ConfigInfluxDB
 
+// @Summary Represents a data record
+// @Description Represents a data record with information about time, measurement type, airport ID, and points.
+// @ID dataRecord
+// @Accept json
+// @Produce json
+// @Example ExampleDataRecord
 type DataRecord struct {
-	From        time.Time `json:"beginning time"`
-	To          time.Time `json:"ending time"`
-	MeasureType string    `json:"type"`
-	AirportId   string    `json:"id"`
-	Points      []Point   `json:"tab of points"`
+	// beginning time
+	// Example: "2022-01-01T00:00:00Z"
+	From time.Time `json:"beginning time"`
+	// ending time
+	// Example: "2022-01-02T00:00:00Z"
+	To time.Time `json:"ending time"`
+	// type of measurement
+	// Example: "temperature"
+	MeasureType string `json:"type"`
+	// ID of the airport
+	// Example: "JFK"
+	AirportId string `json:"id"`
+	// array of points
+	// Example: [{"Time": "2022-01-01T12:00:00Z", "Value": 25.5, "SensorID": "123"}]
+	Points []Point `json:"tab of points"`
 }
 
+// @Summary Represents a data point
+// @Description Represents a data point with time, value, and sensor ID.
+// @ID point
+// @Accept json
+// @Produce json
+// @Example ExamplePoint
 type Point struct {
-	Time     time.Time
-	Value    interface{}
+	// Time of the data point
+	// Example: "2022-01-01T12:00:00Z"
+	Time time.Time
+	// Value of the data point
+	// Example: 25.5
+	Value interface{}
+	// Sensor ID
+	// Example: "123"
 	SensorID string
 }
 
+// @Summary Represents a sensor
+// @Description Represents a sensor with ID and measurement type.
+// @ID sensor
+// @Accept json
+// @Produce json
+// @Example ExampleSensor
 type Sensor struct {
-	ID          string
+	// Sensor ID
+	// Example: "123"
+	ID string
+	// Sensor category or measurement type
+	// Example: "temperature"
 	MeasureType string
 }
 
+// @Summary Represents the response containing average value
+// @Description Represents the response containing the average value for a sensor.
+// @ID averageResponse
+// @Accept json
+// @Produce json
+// @Example ExampleAverageResponse
 type AverageResponse struct {
+	// Average value
+	// Example: 25.5
 	Average float64 `json:"moyenne"`
 }
 
+// @Summary Represents the response containing multiple averages
+// @Description Represents the response containing average values for temperature, pressure, and wind.
+// @ID averageMultipleResponse
+// @Accept json
+// @Produce json
+// @Example ExampleAverageMultipleResponse
 type AverageMultipleResponse struct {
+	// Average value for temperature
+	// Example: 25.5
 	TempAverage float64 `json:"TempAverage"`
+	// Average value for pressure
+	// Example: 1013.2
 	PresAverage float64 `json:"PresAverage"`
+	// Average value for wind speed
+	// Example: 10.2
 	WindAverage float64 `json:"WindAverage"`
 }
 
@@ -147,6 +210,15 @@ func writeJson(w *http.ResponseWriter, response any) {
 	}
 }
 
+// @Summary Get a list of sensors for a specific airport.
+// @Description This endpoint retrieves a list of sensors for a specific airport.
+// @Tags Sensor
+// @ID getSensors
+// @Produce json
+// @Param airportID path string true "ID of the airport"
+// @Success 200 {array} Sensor
+// @Failure 500 {string} string
+// @Router /sensors/{airportID} [get]
 func getSensors(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	airportID := vars["airportID"]
@@ -187,6 +259,14 @@ func getSensors(w http.ResponseWriter, r *http.Request) {
 	writeJson(&w, response)
 }
 
+// @Summary Get a list of airports.
+// @Description This endpoint retrieves a list of airports.
+// @ID getAirports
+// @Tags Airport
+// @Produce json
+// @Success 200 {array} string
+// @Failure 500 {string} string
+// @Router /airports [get]
 func getAirports(w http.ResponseWriter, _ *http.Request) {
 	dbLock.Lock()
 	defer dbLock.Unlock()
@@ -220,6 +300,19 @@ func getAirports(w http.ResponseWriter, _ *http.Request) {
 	writeJson(&w, response)
 }
 
+// @Summary Get data from a specific sensor for a given sensor type and airport.
+// @Description This endpoint retrieves data from a specific sensor based on the sensor type and airport ID.
+// @Tags Data
+// @ID getDataFromSensorTypeAirportIDSensorID
+// @Produce json
+// @Param sensorType path string true "Type of sensor"
+// @Param airportID path string true "ID of the airport"
+// @Param sensorID path string true "ID of the sensor"
+// @Param from query string false "Start date (format: 2006-01-02T15:04:05Z)"
+// @Param to query string false "End date (format: 2006-01-02T15:04:05Z)"
+// @Success 200 {object} DataRecord
+// @Failure 500 {string} string
+// @Router /data/{sensorType}/{airportID}/{sensorID} [get]
 func getDataFromSensorTypeAirportIDSensorID(w http.ResponseWriter, r *http.Request) {
 	// On récupère les variables de chemin
 	vars := mux.Vars(r)
@@ -245,6 +338,16 @@ func getDataFromSensorTypeAirportIDSensorID(w http.ResponseWriter, r *http.Reque
 	writeJson(&w, response)
 }
 
+// @Summary Get the average value for a specific sensor type at a given airport.
+// @Description This endpoint calculates and returns the average value for a specific sensor type at a given airport.
+// @ID getAverageBySensorType
+// @Tags Average
+// @Produce json
+// @Param sensorType path string true "Type of sensor"
+// @Param airportID path string true "ID of the airport"
+// @Success 200 {object} AverageResponse
+// @Failure 500 {string} string
+// @Router /average/{sensorType}/{airportID} [get]
 func getAverageBySensorType(w http.ResponseWriter, r *http.Request) {
 	// On récupère les variables de chemin
 	vars := mux.Vars(r)
@@ -290,6 +393,15 @@ func calculateAverage(airportID string, sensorType string) (float64, error) {
 	return average, nil
 }
 
+// @Summary Get the average values for temperature, pressure, and wind at a given airport.
+// @Description This endpoint calculates and returns the average values for temperature, pressure, and wind at a given airport.
+// @ID getAllAverages
+// @Tags Average
+// @Produce json
+// @Param airportID path string true "ID of the airport"
+// @Success 200 {object} AverageMultipleResponse
+// @Failure 500 {string} string
+// @Router /averages/{airportID} [get]
 func getAllAverages(w http.ResponseWriter, r *http.Request) {
 	// On récupère les variables de chemin
 	vars := mux.Vars(r)
@@ -350,22 +462,64 @@ func checkDates(from, to string) (time.Time, time.Time, error) {
 	return parsedFrom, parsedTo, nil
 }
 
+// @title Airport Data API
+// @description This API provides endpoints to retrieve data from airport sensors.
+// @version 1.0
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /
+
 func main() {
 	var (
 		influxEnvFile = flag.String("influx", "influxdb.env", ".env file for influx db")
 	)
+
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+
 	flag.Parse()
 	ConfigInflux = config.ReadEnv[mqttTools.ConfigInfluxDB](*influxEnvFile)
 
 	r := mux.NewRouter()
+
 	r.HandleFunc("/data/{sensorType}/{airportID}/{sensorID}", getDataFromSensorTypeAirportIDSensorID).Methods("GET", "OPTIONS")
 	r.HandleFunc("/airports", getAirports).Methods("GET", "OPTIONS")
 	r.HandleFunc("/sensors/{airportID}", getSensors).Methods("GET", "OPTIONS")
 	r.HandleFunc("/average/{sensorType}/{airportID}", getAverageBySensorType).Methods("GET", "OPTIONS")
 	r.HandleFunc("/averages/{airportID}", getAllAverages).Methods("GET", "OPTIONS")
+
+	r.HandleFunc("/swaggerJson", func(w http.ResponseWriter, r *http.Request) {
+		serveSwaggerJSON(w, r, "./docs/swagger.json")
+	}).Methods("GET")
+
+	r.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/swaggerJson"), //The url pointing to API definition
+	))
+
 	err := http.ListenAndServe(":8080", r)
 	if err != nil {
 		log.Println(err)
+		return
+	}
+}
+
+func serveSwaggerJSON(w http.ResponseWriter, r *http.Request, swaggerJSONPath string) {
+	file, err := os.Open(swaggerJSONPath)
+	if err != nil {
+		log.Errorf("Error opening Swagger JSON file: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := io.Copy(w, file); err != nil {
+		log.Errorf("Error serving Swagger JSON file: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 }
