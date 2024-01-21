@@ -448,21 +448,23 @@ func handleError(w http.ResponseWriter, err error, message string, status int) {
 func checkDates(from, to string) (time.Time, time.Time, error) {
 	layout := "2006-01-02T15:04:05Z"
 
+	if from == "" || to == "" {
+		return time.Time{}, time.Time{}, fmt.Errorf("l'une des dates est vide")
+	}
+
 	parsedFrom, errFrom := time.Parse(layout, from)
-	if errFrom != nil && from != "" {
+	if errFrom != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("erreur lors de la conversion de la date from en time.Time: %w", errFrom)
 	}
 
 	parsedTo, errTo := time.Parse(layout, to)
-	if errTo != nil && to != "" {
+	if errTo != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("erreur lors de la conversion de la date to en time.Time: %w", errTo)
 	}
 
 	if !parsedTo.IsZero() && parsedTo.Before(parsedFrom) {
 		return time.Time{}, time.Time{}, errors.New("date de fin avant la date de début")
 	}
-
-	//si date de fin après time.Now() -> la query request time.Now(), mais qu'est ce que je renvoie dans la DataStruct ?
 
 	return parsedFrom, parsedTo, nil
 }
