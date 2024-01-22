@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"airport/internal/mqttTools"
 	"context"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -116,7 +115,6 @@ func TestGetAirports(t *testing.T) {
 	assert.Equal(t, strings.Contains(w.Body.String(), "\"AAA\""), true)
 }
 
-/*
 func TestAppendFilter(t *testing.T) {
 	strBuilder := strings.Builder{}
 	appendFilter(&strBuilder, "testField", "0")
