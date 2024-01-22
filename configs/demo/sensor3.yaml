@@ -1,0 +1,13 @@
+mqtt:
+  url: ssl://5891f12726364e0cbda5ae805fad5a45.s2.eu.hivemq.cloud
+  port: 8883
+  qos: 2
+  id: senorDABB3
+  login: tparchid
+  password: IMTAtlantique44
+api:
+  use: false
+  key: 00565729182a4505881b8e47a5
+sensor:
+  airport: DABB
+  frequency: 5

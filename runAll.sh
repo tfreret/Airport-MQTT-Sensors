@@ -17,3 +17,25 @@ for file in "${files[@]}"; do
 done
 
 echo "Build completed."
+
+# echo "lunching mosquitto serveur"
+# mosquitto &
+
+for i in "${!files[@]}"; do
+    file="${files[i]}"
+    echo "Running $file"
+    ."/$build_dir/$file" &
+done
+
+
+cleanup() {
+    echo "Process stopping..."
+    for file in "${files[@]}"; do
+        pkill -TERM -f "$build_dir/$file"
+    done
+    wait
+}
+
+trap 'cleanup' INT
+wait
+echo "All process stopped"
