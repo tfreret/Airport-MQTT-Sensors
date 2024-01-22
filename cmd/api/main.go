@@ -327,6 +327,7 @@ func getDataFromSensorTypeAirportIDSensorID(w http.ResponseWriter, r *http.Reque
 
 	from := r.URL.Query().Get("from")
 	to := r.URL.Query().Get("to")
+
 	parsedFrom, parsedTo, err := checkDates(from, to)
 	if err != nil {
 		handleError(w, err, "Erreur lors de la vérification des dates", http.StatusInternalServerError)
@@ -387,9 +388,8 @@ func calculateAverage(airportID string, sensorType string) (float64, error) {
 		// Assuming that the Value field is a float64
 		value, ok := point.Value.(float64)
 		if !ok {
-			return 0.0, fmt.Errorf("value is not a valid float64")
+			value = float64(point.Value.(int64))
 		}
-
 		sum += value
 	}
 
@@ -448,22 +448,43 @@ func handleError(w http.ResponseWriter, err error, message string, status int) {
 func checkDates(from, to string) (time.Time, time.Time, error) {
 	layout := "2006-01-02T15:04:05Z"
 
-	if from == "" || to == "" {
-		return time.Time{}, time.Time{}, fmt.Errorf("l'une des dates est vide")
-	}
+	var parsedFrom time.Time
+	var parsedTo time.Time
+	var errConversion error
 
-	parsedFrom, errFrom := time.Parse(layout, from)
-	if errFrom != nil {
-		return time.Time{}, time.Time{}, fmt.Errorf("erreur lors de la conversion de la date from en time.Time: %w", errFrom)
-	}
+	switch {
+	case from == "" && to == "":
+		parsedFrom = time.Time{}
+		parsedTo = time.Time{}
 
-	parsedTo, errTo := time.Parse(layout, to)
-	if errTo != nil {
-		return time.Time{}, time.Time{}, fmt.Errorf("erreur lors de la conversion de la date to en time.Time: %w", errTo)
-	}
+	case from == "" && to != "":
+		return time.Time{}, time.Time{}, errors.New("to défini mais pas from")
 
-	if !parsedTo.IsZero() && parsedTo.Before(parsedFrom) {
-		return time.Time{}, time.Time{}, errors.New("date de fin avant la date de début")
+	case from != "" && to == "":
+		parsedFrom, errConversion = time.Parse(layout, from)
+		if errConversion != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("erreur lors de la conversion de la date from en time.Time: %w", errConversion)
+		}
+		parsedTo = time.Now()
+
+		if parsedFrom.After(parsedTo) {
+			return time.Time{}, time.Time{}, errors.New("date de début dans le futur")
+		}
+
+	case from != "" && to != "":
+		parsedFrom, errConversion = time.Parse(layout, from)
+		if errConversion != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("erreur lors de la conversion de la date from en time.Time: %w", errConversion)
+		}
+
+		parsedTo, errConversion = time.Parse(layout, to)
+		if errConversion != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("erreur lors de la conversion de la date to en time.Time: %w", errConversion)
+		}
+
+		if parsedTo.IsZero() || parsedFrom.IsZero() || parsedTo.Before(parsedFrom) {
+			return time.Time{}, time.Time{}, errors.New("date de fin avant la date de début")
+		}
 	}
 
 	return parsedFrom, parsedTo, nil

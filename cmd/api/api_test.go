@@ -96,15 +96,24 @@ func InsertSampleData() {
 	fields := map[string]interface{}{
 		"value": 12,
 	}
-	timestamp, _ := time.Parse(time.RFC3339, "2022-01-01T00:00:00Z")
+	fields2 := map[string]interface{}{
+		"value": 16,
+	}
+	fields3 := map[string]interface{}{
+		"value": 18,
+	}
+	timestamp, _ := time.Parse(time.RFC3339, "2022-01-01T12:00:00Z")
+	timestamp2, _ := time.Parse(time.RFC3339, "2024-01-22T12:00:00Z")
+	timestamp3 := time.Now()
 	writeAPI := (*db).WriteAPI(testConfig.InfluxDBOrg, testConfig.InfluxDBBucket)
 	point := influxdb2.NewPoint("sensor_data", tags, fields, timestamp)
+	point2 := influxdb2.NewPoint("sensor_data", tags, fields2, timestamp2)
+	point3 := influxdb2.NewPoint("sensor_data", tags, fields3, timestamp3)
 
 	writeAPI.WritePoint(point)
+	writeAPI.WritePoint(point2)
+	writeAPI.WritePoint(point3)
 	writeAPI.Flush()
-
-	var builder strings.Builder
-	builder.WriteString("from(bucket:\"" + testConfig.InfluxDBBucket + "\") ")
 }
 
 func TestGetAirports(t *testing.T) {
@@ -113,6 +122,22 @@ func TestGetAirports(t *testing.T) {
 	getAirports(w, r)
 	assert.Equal(t, w.Code, 200)
 	assert.Equal(t, strings.Contains(w.Body.String(), "\"AAA\""), true)
+}
+
+func TestGetDataFromSensorTypeAirportIDSensorID(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/data/AAA/Wind/capteur1?from=2022-01-01T00:00:00Z", nil)
+	w := httptest.NewRecorder()
+	getDataFromSensorTypeAirportIDSensorID(w, r)
+	assert.Equal(t, w.Code, 200)
+	assert.Equal(t, strings.Contains(w.Body.String(), "12"), true)
+}
+
+func TestGetTempAverage(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/average/KJFK/Temp", nil)
+	w := httptest.NewRecorder()
+	getAverageBySensorType(w, r)
+	assert.Equal(t, w.Code, 200)
+	assert.Equal(t, strings.Contains(w.Body.String(), "17"), true)
 }
 
 func TestAppendFilter(t *testing.T) {
@@ -130,82 +155,115 @@ func TestCheckDatesEmptyFrom(t *testing.T) {
 	from := ""
 	to := "2024-02-16T12:00:00Z"
 
-	parsedFrom, parsedTo, _ := checkDates(from, to)
+	parsedFrom, parsedTo, err := checkDates(from, to)
 	expectedFrom := time.Time{}
 	expectedTo := time.Time{}
 
-	if parsedFrom != expectedFrom {
-		t.Errorf("from ne correspond pas")
-	}
+	assert.Equal(t, parsedFrom, expectedFrom, "from ne correspond pas")
+	assert.Equal(t, parsedTo, expectedTo, "to ne correspond pas")
+	assert.Equal(t, "to défini mais pas from", err.Error())
+}
 
-	if parsedTo != expectedTo {
-		t.Errorf("to ne correspond pas")
-	}
+func TestCheckDatesEmptyToFromInFuture(t *testing.T) {
+	from := "2024-05-16T12:00:00Z"
+	to := ""
+
+	parsedFrom, parsedTo, err := checkDates(from, to)
+	expectedFrom := time.Time{}
+	expectedTo := time.Time{}
+
+	assert.Equal(t, parsedFrom, expectedFrom, "from ne correspond pas")
+	assert.Equal(t, parsedTo, expectedTo, "to ne correspond pas")
+	assert.Equal(t, "date de début dans le futur", err.Error())
+}
+
+func TestCheckDatesEmptyToInvalidFormat(t *testing.T) {
+	from := "12/01/2024"
+	to := ""
+
+	parsedFrom, parsedTo, err := checkDates(from, to)
+	expectedFrom := time.Time{}
+	expectedTo := time.Time{}
+
+	assert.Equal(t, parsedFrom, expectedFrom, "from ne correspond pas")
+	assert.Equal(t, parsedTo, expectedTo, "to ne correspond pas")
+	assert.Equal(t, strings.Contains(err.Error(), "erreur lors de la conversion de la date from en time.Time"), true)
 }
 
 func TestCheckDatesEmptyTo(t *testing.T) {
-	from := "2024-02-16T12:00:00Z"
+	from := "2024-01-16T12:00:00Z"
 	to := ""
 
-	parsedFrom, parsedTo, _ := checkDates(from, to)
-	expectedFrom := time.Time{}
-	expectedTo := time.Time{}
-	if parsedFrom != expectedFrom {
-		t.Errorf("from ne correspond pas")
-	}
+	parsedFrom, parsedTo, err := checkDates(from, to)
+	expectedFrom := time.Date(2024, time.January, 16, 12, 0, 0, 0, time.UTC)
+	expectedTo := time.Now()
 
-	if parsedTo != expectedTo {
-		t.Errorf("to ne correspond pas")
-	}
+	assert.Equal(t, parsedFrom, expectedFrom, "from ne correspond pas")
+	assert.Equal(t, parsedTo, expectedTo, "to ne correspond pas")
+	assert.Equal(t, err, nil)
 }
 
-func TestCheckDatesInvalidFormat(t *testing.T) {
-	from := "12/01/2024"
-	to := "2024-02-16T12:00:00Z"
+func TestCheckDatesEmptyToEmptyFrom(t *testing.T) {
+	from := ""
+	to := ""
 
-	parsedFrom, parsedTo, _ := checkDates(from, to)
+	parsedFrom, parsedTo, err := checkDates(from, to)
 	expectedFrom := time.Time{}
 	expectedTo := time.Time{}
 
-	if parsedFrom != expectedFrom {
-		t.Errorf("from ne correspond pas")
-	}
+	assert.Equal(t, parsedFrom, expectedFrom, "from ne correspond pas")
+	assert.Equal(t, parsedTo, expectedTo, "to ne correspond pas")
+	assert.Equal(t, err, nil)
+}
 
-	if parsedTo != expectedTo {
-		t.Errorf("to ne correspond pas")
-	}
+func TestCheckDatesInvalidFormatFrom(t *testing.T) {
+	from := "12/01/2024"
+	to := "2024-01-16T12:00:00Z"
+
+	parsedFrom, parsedTo, err := checkDates(from, to)
+	expectedFrom := time.Time{}
+	expectedTo := time.Time{}
+
+	assert.Equal(t, parsedFrom, expectedFrom, "from ne correspond pas")
+	assert.Equal(t, parsedTo, expectedTo, "to ne correspond pas")
+	assert.Equal(t, strings.Contains(err.Error(), "erreur lors de la conversion de la date from en time.Time"), true)
+}
+
+func TestCheckDatesInvalidFormatTo(t *testing.T) {
+	from := "2024-01-12T12:00:00Z"
+	to := "16/01/2024"
+
+	parsedFrom, parsedTo, err := checkDates(from, to)
+	expectedFrom := time.Time{}
+	expectedTo := time.Time{}
+
+	assert.Equal(t, parsedFrom, expectedFrom, "from ne correspond pas")
+	assert.Equal(t, parsedTo, expectedTo, "to ne correspond pas")
+	assert.Equal(t, strings.Contains(err.Error(), "erreur lors de la conversion de la date to en time.Time"), true)
 }
 
 func TestCheckDatesToBeforeFrom(t *testing.T) {
-	from := "2024-01-16T12:00:00Z"
-	to := "2024-01-02T12:00:00Z"
+	from := "2024-01-12T12:00:00Z"
+	to := "2024-01-10T12:00:00Z"
 
-	parsedFrom, parsedTo, _ := checkDates(from, to)
+	parsedFrom, parsedTo, err := checkDates(from, to)
 	expectedFrom := time.Time{}
 	expectedTo := time.Time{}
 
-	if parsedFrom != expectedFrom {
-		t.Errorf("from ne correspond pas")
-	}
-
-	if parsedTo != expectedTo {
-		t.Errorf("to ne correspond pas")
-	}
+	assert.Equal(t, parsedFrom, expectedFrom, "from ne correspond pas")
+	assert.Equal(t, parsedTo, expectedTo, "to ne correspond pas")
+	assert.Equal(t, err.Error(), "date de fin avant la date de début")
 }
 
 func TestCheckDatesSuccess(t *testing.T) {
-	from := "2024-01-01T12:00:00Z"
-	to := "2024-01-02T12:00:00Z"
+	from := "2024-01-10T12:00:00Z"
+	to := "2024-01-12T12:00:00Z"
 
-	parsedFrom, parsedTo, _ := checkDates(from, to)
-	expectedFrom := time.Date(2024, time.January, 01, 12, 0, 0, 0, time.UTC)
-	expectedTo := time.Date(2024, time.January, 02, 12, 0, 0, 0, time.UTC)
+	parsedFrom, parsedTo, err := checkDates(from, to)
+	expectedFrom := time.Date(2024, time.January, 10, 12, 0, 0, 0, time.UTC)
+	expectedTo := time.Date(2024, time.January, 12, 12, 0, 0, 0, time.UTC)
 
-	if parsedFrom != expectedFrom {
-		t.Errorf("from ne correspond pas")
-	}
-
-	if parsedTo != expectedTo {
-		t.Errorf("to ne correspond pas")
-	}
+	assert.Equal(t, parsedFrom, expectedFrom, "from ne correspond pas")
+	assert.Equal(t, parsedTo, expectedTo, "to ne correspond pas")
+	assert.Equal(t, err, nil)
 }
