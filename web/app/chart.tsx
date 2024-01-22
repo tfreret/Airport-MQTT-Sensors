@@ -1,5 +1,12 @@
-import { AreaChart, Color, DateRangePicker, Flex, Icon, LineChart, Tab, TabGroup, TabList, Text, Title } from "@tremor/react";
-import { useState, useEffect, useMemo } from "react";
+import {
+  DateRangePicker,
+  DateRangePickerValue,
+  Flex,
+  Icon,
+  LineChart,
+  Title
+} from "@tremor/react";
+import {useState, useEffect} from "react";
 import axios from 'axios';
 
 interface Point {
@@ -17,16 +24,22 @@ import { InformationCircleIcon } from "@heroicons/react/solid";
 interface Props {
   url: string
 }
+
+const initialFrom = new Date(0);
+
 export default function Chart({url}: Props) {
 
   const [chartData, setChartData] = useState<Point[]>([]);
-
+  const [selectedDate, setSelectedDate] = useState<DateRangePickerValue>({from: undefined, to: undefined});
   const fetchData = async () => {
     try {
-        const response = await axios.get(url);
+      const from = selectedDate.from ? selectedDate.from.toISOString() : initialFrom.toISOString();
+      const to = selectedDate.to ? selectedDate.to.toISOString() : new Date().toISOString();
+      const response = await axios.get(`${url}?from=${from}&to=${to}`);
         const data = response.data['Points'] as PointAPI[];
+        const points = data === null ? [] : data.map(it=> {return {date: it.Time, value: it.Value}});
         setChartData(
-          data.map(it=> {return {date: it.Time, value: it.Value}})
+          points
         );
 
     } catch (error) {
@@ -41,7 +54,7 @@ export default function Chart({url}: Props) {
         fetchData()
       }, 1000 * 5) // in milliseconds
       return () => clearInterval(intervalId)
-  }, []);
+  }, [selectedDate]);
 
   return (
     <>
@@ -57,7 +70,7 @@ export default function Chart({url}: Props) {
           </Flex>
         </div>
         <div>
-          <DateRangePicker></DateRangePicker>
+          <DateRangePicker value={selectedDate} onValueChange={setSelectedDate}/>
         </div>
       </div>
       <div className="mt-8 hidden sm:block">

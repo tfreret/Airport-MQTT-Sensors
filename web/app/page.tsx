@@ -2,23 +2,20 @@
 
       import {
         Card,
-        Col,
         Flex,
         Grid,
         Metric,
         SearchSelect,
         SearchSelectItem,
-        Subtitle,
         Tab,
         TabGroup,
         TabList,
         TabPanel,
         TabPanels,
-        Text,
         Title,
       } from "@tremor/react";
 import Chart from "./chart";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import axios from 'axios';
 
 interface Sensor {
@@ -72,6 +69,9 @@ export default function Home() {
 
   const handleSensorChange = useCallback((e: string) => {setSelectedSensor(e)}, []);
   const handleTabChange = (index: number) => {setActiveTab(index);};
+
+  const getDataUrl = useMemo(() => `http://localhost:8080/data/${selectedAirport}/${sensors.find(it=>it.ID===selectedSensor)?.MeasureType}/${selectedSensor}`,
+      [selectedAirport, selectedSensor, sensors]);
 
   return (
     <main className="p-12">
@@ -141,7 +141,8 @@ export default function Home() {
           <TabPanel>
           <div className="mt-6">
               { selectedAirport !== "" && selectedSensor !== "" ? (
-                <Chart key={`${selectedAirport}/${selectedSensor}`} url={`http://localhost:8080/data/${selectedAirport}/${sensors.find(it=>it.ID===selectedSensor)?.MeasureType}/${selectedSensor}`} />
+                <Chart key={`${selectedAirport}/${selectedSensor}`}
+                       url={getDataUrl} />
               ) : (
                 <Grid numItemsMd={2} numItemsLg={3} className="gap-6 mt-6">
                   <Card>
