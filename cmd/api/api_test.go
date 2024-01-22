@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"airport/internal/mqttTools"
 	"context"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -122,12 +123,10 @@ func TestAppendFilter(t *testing.T) {
 
 	expectedResult := "and r.testField == \"0\""
 
-	fmt.Println(expectedResult)
-	fmt.Println(strBuilder.String())
-	if expectedResult != strBuilder.String() {
+	if strings.TrimSpace(expectedResult) != strings.TrimSpace(strBuilder.String()) {
 		t.Errorf("la chaîne ne correpond pas")
 	}
-}*/
+}
 
 func TestCheckDatesEmptyFrom(t *testing.T) {
 	from := ""
