@@ -1,23 +1,21 @@
 package main
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
 
-/*
 func TestAppendFilter(t *testing.T) {
 	strBuilder := strings.Builder{}
 	appendFilter(&strBuilder, "testField", "0")
 
 	expectedResult := "and r.testField == \"0\""
 
-	fmt.Println(expectedResult)
-	fmt.Println(strBuilder.String())
-	if expectedResult != strBuilder.String() {
+	if strings.TrimSpace(expectedResult) != strings.TrimSpace(strBuilder.String()) {
 		t.Errorf("la chaîne ne correpond pas")
 	}
-}*/
+}
 
 func TestCheckDatesEmptyFrom(t *testing.T) {
 	from := ""
