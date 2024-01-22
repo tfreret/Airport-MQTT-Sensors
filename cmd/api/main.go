@@ -207,7 +207,6 @@ func writeJson(w *http.ResponseWriter, response any) {
 	}
 
 	(*w).Header().Set("Content-Type", "application/json")
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 	_, err = (*w).Write(jsonResponse)
 	if err != nil {
 		handleError(*w, err, "Erreur dans l'écriture de la réponse", http.StatusInternalServerError)
@@ -225,6 +224,7 @@ func writeJson(w *http.ResponseWriter, response any) {
 // @Failure 500 {string} string
 // @Router /sensors/{airportID} [get]
 func getSensors(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	vars := mux.Vars(r)
 	airportID := vars["airportID"]
 
@@ -273,6 +273,7 @@ func getSensors(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string
 // @Router /airports [get]
 func getAirports(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	dbLock.Lock()
 	defer dbLock.Unlock()
 
@@ -319,6 +320,7 @@ func getAirports(w http.ResponseWriter, _ *http.Request) {
 // @Failure 500 {string} string
 // @Router /data/{airportID}/{sensorType}/{sensorID} [get]
 func getDataFromSensorTypeAirportIDSensorID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	// On récupère les variables de chemin
 	vars := mux.Vars(r)
 	airportID := vars["airportID"]
@@ -354,6 +356,7 @@ func getDataFromSensorTypeAirportIDSensorID(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {string} string
 // @Router /average/{airportID}/{sensorType} [get]
 func getAverageBySensorType(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	// On récupère les variables de chemin
 	vars := mux.Vars(r)
 	sensorType := vars["sensorType"]
@@ -408,6 +411,7 @@ func calculateAverage(airportID string, sensorType string) (float64, error) {
 // @Failure 500 {string} string
 // @Router /average/{airportID} [get]
 func getAllAverage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	// On récupère les variables de chemin
 	vars := mux.Vars(r)
 	airportID := vars["airportID"]
@@ -515,6 +519,7 @@ func main() {
 }
 
 func serveSwaggerJSON(w http.ResponseWriter, swaggerJSONPath string) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	file, err := os.Open(swaggerJSONPath)
 	if err != nil {
 		log.Errorf("Error opening Swagger JSON file: %v", err)
