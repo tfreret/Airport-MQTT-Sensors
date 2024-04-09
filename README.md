@@ -1,60 +1,60 @@
-# Projet d'Architecture Distribuée
+# Distributed Architecture Project
 
-## Membres du Groupe
+## Group Members
 - **Tom Freret**
 - **Louis Painter**
 - **Matthis Bleuet**
 - **Antoine Otegui**
 
-## Aperçu
-Ce projet, réalisé en Go, a pour objectif de simuler des capteurs (pression, température, vent) dans le contexte aéroportuaire. Il s'agit d'une architecture distribuée, où les microservices communiquent via MQTT.
+## Overview
+This project, implemented in Go, aims to simulate sensors (pressure, temperature, wind) in the airport context. It employs a distributed architecture where microservices communicate via MQTT.
 
-![Schema archi](./assets/architecture.png).
+![Architecture Diagram](./assets/architecture.png).
 
-## Organisation du Projet
-Utilisation d'un tableau Kanban (JIRA) pour la gestion du projet, en association avec Discord pour la communication.
+## Project Organization
+Utilization of a Kanban board (JIRA) for project management, in conjunction with Discord for communication.
 
-## Choix Techniques
+## Technical Choices
 - **InfluxDB**
-- **HiveMQ** en broker MQTT (possibilité d'utiliser mosquitto ou autre broker)
-- Quelques librairies :
-  - **Logrus** pour les logs
-  - **Paho** pour le MQTT
-  - **Swaggo** pour la génération de Swagger
-  - **Viper** pour charger les configurations et autres
-  - **Mux** pour l'API
-- Projet **Next.js** pour la SPA
+- **HiveMQ** as MQTT broker (alternative brokers such as Mosquitto are possible)
+- A few libraries:
+  - **Logrus** for logging
+  - **Paho** for MQTT
+  - **Swaggo** for Swagger generation
+  - **Viper** for loading configurations and others
+  - **Mux** for the API
+- **Next.js** project for the Single Page Application (SPA)
 
-## Structure du Projet :
-- `assets` : Images et autres
-- `/cmd/` : Fichiers sources de services
-- `/configs` : Fichiers de configurations des microservices
-- `/docs` : Données du Swagger généré
-- `/exe` : Binaires de tous les services
-- `/internal` : Code source commun
-- `/outputs` : Les fichiers csv de save
-- `/web` : La SPA
-- `/outputs` : Les fichiers .csv des données
+## Project Structure:
+- `assets`: Images and other assets
+- `/cmd/`: Source files for services
+- `/configs`: Configuration files for microservices
+- `/docs`: Generated Swagger data
+- `/exe`: Binaries for all services
+- `/internal`: Common source code
+- `/outputs`: Saved .csv files
+- `/web`: The SPA
+- `/outputs`: Data .csv files
 
-## Instructions de Compilation et d'Exécution
+## Compilation and Execution Instructions
 
 ### Docker InfluxDB
 
-Pour lancer le conteneur Docker InfluxDB, utilisez la commande suivante :
+To launch the Docker InfluxDB container, use the following command:
 ```bash
 docker compose --env-file ../configs/influxdb.env up
 ```
 
-### Build et Run
+### Build and Run
 
-Tous les scripts sont disponibles en .bat et .sh.
+All scripts are available in .bat and .sh.
 
-- `./BuildAll` : Build des binaires
-- `./runAll` : Build puis lance tous les services avec les configurations par défaut
-- `./demo` : Lances des capteurs de demos sur différents aéroports
-- `./demoAlert` : lances un sensor qui aura des valeurs aberantes //TODO
+- `./BuildAll`: Builds the binaries
+- `./runAll`: Builds then launches all services with default configurations
+- `./demo`: Launches demo sensors at different airports
+- `./demoAlert`: Launches a sensor with abnormal values //TODO
 
-Pour lancer les services séparément (à la racine et il faut binesur avoir l'instance influxdb lancé et les bianires compilés):
+To launch services separately (at the root and ensure InfluxDB instance is running and binaries are compiled):
 
 - `./exe/sensors/pressureSensor -config="path/to/config/file"`
 - `./exe/sensors/tempSensor -config="path/to/config/file"`
@@ -64,41 +64,38 @@ Pour lancer les services séparément (à la racine et il faut binesur avoir l'i
 - `./exe/databaseRecorder -config="path/to/config/file" -influx="path/to/env/file"`
 - `./exe/api -config="path/to/config/file" -influx="path/to/env/file"`
 
-### Lancer les tests
+### Swagger Documentation
 
-TODO
+Generate Swagger documentation by following these steps:
 
-### Documentation Swagger
-
-Générez la documentation Swagger en suivant ces étapes :
-
-Assurez-vous que le répertoire go/bin est dans votre
+Ensure the go/bin directory is in your
 
     $PATH (export PATH=$PATH:$GOPATH/bin).
 
-Exécutez la commande suivante à la racine du projet :
+Run the following command at the root of the project:
 
     swag init -g cmd/api/main.go
 
-## API :
+## API:
 
-localhost:8080 : L'API avec les différentes routes :
+localhost:8080: The API with various routes:
 - .../airports
 - .../sensors/sensors/{airportID}
 - .../average/{airportID}
 - .../average/{airportID}/{sensorType}
 - .../data/{airportID}/{sensorType}/{sensorID}
-- .../swagger/ : Pour plus d'informations et un playground pour tester les différentes routes
-## SPA :
+- .../swagger/: For more information and a playground to test different routes
 
-Pour lance la SPA il faut ce placer dans le repo .web
-ensuite installer les dependances :
+## SPA:
+
+To launch the SPA, navigate to the .web repo
+then install dependencies:
 
 ```bash
 npm i
 ```
 
-et ensuite lance l'appli
+and then run the app
 
 ```bash
 npm run dev
