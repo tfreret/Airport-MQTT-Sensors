@@ -1,5 +1,5 @@
 mqtt:
-  url: ssl://5891f12726364e0cbda5ae805fad5a45.s2.eu.hivemq.cloud
+  url: ---
   port: 8883
   qos: 2
   id: senorTEST3
@@ -7,7 +7,7 @@ mqtt:
   password: IMTAtlantique44
 api:
   use: false
-  key: 00565729182a4505881b8e47a5
+  key: ---
 sensor:
   airport: TEST
   frequency: 5
